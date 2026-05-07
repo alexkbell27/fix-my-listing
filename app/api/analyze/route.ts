@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseRouteHandler, supabaseAdmin } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const maxDuration = 300;
 
@@ -452,6 +453,15 @@ async function runAnalysis(opts: {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // ── Rate limit ────────────────────────────────────────────────────────────
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  if (!rateLimit(ip, 5, 3600000)) {
+    return NextResponse.json(
+      { error: "Too many requests, please try again later", code: "RATE_LIMITED" },
+      { status: 429 }
+    );
+  }
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   const supabase = createSupabaseRouteHandler(req);
   const { data: { user } } = await supabase.auth.getUser();

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { toast } from "sonner";
 import { MOCK } from "@/app/results/[id]/mockData";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -352,8 +354,14 @@ function CopyBtn({ text }: { text: string }) {
   return (
     <button
       className="pdf-hide"
-      onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      style={{ flexShrink: 0, padding: "0.35rem 0.8rem", borderRadius: 8, border: "0.5px solid var(--border)", background: copied ? "#F0FFF4" : "var(--surface)", color: copied ? "#16A34A" : "var(--muted)", fontSize: "0.75rem", fontWeight: 500, cursor: "pointer", transition: "color 0.15s, background 0.15s" }}
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        toast.success("Copied!");
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      style={{ flexShrink: 0, padding: "0.35rem 0.8rem", borderRadius: 8, border: "0.5px solid var(--border)", background: copied ? "rgba(168,218,220,0.25)" : "var(--surface)", color: copied ? "#1D3557" : "var(--muted)", fontSize: "0.75rem", fontWeight: 500, cursor: "pointer", transition: "color 0.15s, background 0.15s" }}
     >
       {copied ? "✓ Copied" : "Copy"}
     </button>
@@ -380,11 +388,11 @@ function BulletList({ items, accent }: { items: string[]; accent?: boolean }) {
 
 function ScoreBadge({ score }: { score: number }) {
   if (!score) return null;
-  const bg = score >= 70 ? "#F0FFF4" : score >= 40 ? "#FFFBEB" : "#FFF5F5";
-  const color = score >= 70 ? "#16A34A" : score >= 40 ? "#D97706" : "#DC2626";
-  const border = score >= 70 ? "#BBF7D0" : score >= 40 ? "#FDE68A" : "#FECACA";
-  const lbl = score >= 70 ? "Good" : score >= 40 ? "Fair" : "Poor";
-  const tagClass = score >= 70 ? "tag-good" : score >= 40 ? "tag-warn" : "tag-bad";
+  const bg = score >= 75 ? "rgba(168,218,220,0.3)" : score >= 50 ? "rgba(69,123,157,0.15)" : "rgba(230,57,70,0.12)";
+  const color = score >= 75 ? "#1D3557" : score >= 50 ? "#457B9D" : "#E63946";
+  const border = score >= 75 ? "#A8DADC" : score >= 50 ? "#457B9D" : "#E63946";
+  const lbl = score >= 75 ? "Good" : score >= 50 ? "Fair" : "Poor";
+  const tagClass = score >= 75 ? "tag-good" : score >= 50 ? "tag-warn" : "tag-bad";
   return <span className={tagClass} style={pill(bg, color, border)}>{score}/100 · {lbl}</span>;
 }
 
@@ -498,6 +506,7 @@ export function ResultsReport({
     setChecked((prev) => { const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next; });
 
   const handleDownload = () => {
+    toast.success("Opening print dialog…");
     const key = "ll_print_tip_shown";
     if (typeof window !== "undefined" && !localStorage.getItem(key)) {
       localStorage.setItem(key, "1");
@@ -523,7 +532,7 @@ export function ResultsReport({
   const printDate = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   return (
-    <div style={{ background: "var(--bg)", minHeight: "100vh", color: "var(--text)" }}>
+    <div style={{ background: "var(--color-background)", minHeight: "100vh", color: "var(--color-text-primary)" }}>
       <style>{PRINT_STYLES}</style>
 
       {/* Print-only branding header — hidden on screen */}
@@ -539,20 +548,20 @@ export function ResultsReport({
       </div>
 
       {showNav && (
-        <nav style={{ borderBottom: "0.5px solid var(--border)", background: "var(--surface)", padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
-          <Link href="/" style={{ fontWeight: 500, fontSize: "1rem", textDecoration: "none", color: "var(--text)" }}>
-            Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+        <nav style={{ background: "#FFFFFF", borderBottom: "0.5px solid var(--color-border)", padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <Image src="/logo-full.png" alt="Fix My Listing" height={30} width={150} style={{ height: 30, width: "auto" }} />
           </Link>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <button
               className="download-btn"
               onClick={handleDownload}
-              style={{ padding: "0.35rem 0.85rem", borderRadius: "var(--radius)", border: "0.5px solid var(--border)", background: "var(--surface)", color: "var(--text)", fontSize: "0.82rem", fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
+              style={{ padding: "0.35rem 0.85rem", borderRadius: 8, border: "1px solid var(--color-border)", background: "transparent", color: "#1D3557", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
             >
               Download PDF
             </button>
-            <Link href="/dashboard" style={{ fontSize: "0.82rem", color: "var(--muted)", textDecoration: "none" }}>My reports</Link>
-            <Link href="/" style={{ fontSize: "0.82rem", color: "var(--muted)", textDecoration: "none" }}>New Report</Link>
+            <Link href="/dashboard" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>My Reports</Link>
+            <Link href="/" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>New Report</Link>
           </div>
         </nav>
       )}
@@ -570,7 +579,7 @@ export function ResultsReport({
             <span style={{ ...label, marginBottom: "0.5rem" }}>Search ranking score</span>
             <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "3rem", fontWeight: 500, letterSpacing: "-0.05em", lineHeight: 1, color: "#CACACA" }}>{data.currentScore}</div>
+                <div style={{ fontSize: "3rem", fontWeight: 500, letterSpacing: "-0.05em", lineHeight: 1, color: "var(--muted)" }}>{data.currentScore}</div>
                 <span style={{ ...label, marginTop: "0.4rem" }}>Current</span>
               </div>
               <div style={{ color: "var(--border)", fontSize: "1.5rem" }}>→</div>
@@ -580,7 +589,7 @@ export function ResultsReport({
               </div>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
+          <div className="metric-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
             <div style={{ ...card, borderColor: "var(--accent)" }}>
               <span style={label}>Ranking blockers</span>
               <div style={{ fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.04em", marginTop: "0.5rem", color: "var(--accent)" }}>{data.criticalFixCount}</div>
@@ -615,9 +624,9 @@ export function ResultsReport({
             <>
               <span style={label}>Current</span>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", marginBottom: "1.5rem" }}>
-                <div style={{ flex: 1, background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.75rem 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>{data.title.current}</div>
-                <span className="tag-bad" style={pill("#FFF1F1", "#DC2626", "#FECACA")}>Poor</span>
-                <span style={pill("var(--bg)", "var(--muted)", "var(--border)")}>{data.title.currentCharCount} chars</span>
+                <div style={{ flex: 1, background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.75rem 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>{data.title.current}</div>
+                <span className="tag-bad" style={pill("rgba(230,57,70,0.1)", "#E63946", "rgba(230,57,70,0.35)")}>Poor</span>
+                <span style={pill("#FFFFFF", "var(--muted)", "var(--border)")}>{data.title.currentCharCount} chars</span>
               </div>
             </>
           )}
@@ -632,12 +641,12 @@ export function ResultsReport({
               <span style={label}>SEO-optimized titles</span>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.65rem" }}>
                 {data.title.alternatives.map((alt, i) => (
-                  <div key={i} className="before-after-card" style={{ background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "1rem 1rem 0.85rem", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
+                  <div key={i} className="before-after-card" style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 10, padding: "1rem 1rem 0.85rem", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: "0.9rem", fontWeight: 500, margin: "0 0 0.5rem", lineHeight: 1.4 }}>{alt.text}</p>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
                         <span style={{ fontSize: "0.73rem", color: "var(--muted)", marginRight: "0.25rem" }}>{alt.charCount} chars ·</span>
-                        {alt.keywords.map((kw) => <span key={kw} style={pill("#FFF5F5", "var(--accent)", "#FFD5D7")}>{kw}</span>)}
+                        {alt.keywords.map((kw) => <span key={kw} style={pill("rgba(230,57,70,0.1)", "#E63946", "rgba(230,57,70,0.35)")}>{kw}</span>)}
                       </div>
                     </div>
                     <CopyBtn text={alt.text} />
@@ -667,7 +676,7 @@ export function ResultsReport({
               {tabKeys.length > 1 && (
                 <div className="pdf-hide" style={{ display: "flex", gap: "0.35rem", marginBottom: "1rem", flexWrap: "wrap" }}>
                   {tabKeys.map((key) => (
-                    <button key={key} onClick={() => setDescTab(key)} style={{ padding: "0.35rem 0.9rem", borderRadius: 8, border: "0.5px solid", borderColor: descTab === key ? "var(--accent)" : "var(--border)", background: descTab === key ? "#FFF5F5" : "transparent", color: descTab === key ? "var(--accent)" : "var(--muted)", fontSize: "0.8rem", fontWeight: 500, cursor: "pointer" }}>
+                    <button key={key} onClick={() => setDescTab(key)} style={{ padding: "0.35rem 0.9rem", borderRadius: 8, border: "0.5px solid", borderColor: descTab === key ? "var(--accent)" : "var(--border)", background: descTab === key ? "rgba(230,57,70,0.1)" : "transparent", color: descTab === key ? "var(--accent)" : "var(--muted)", fontSize: "0.8rem", fontWeight: 500, cursor: "pointer" }}>
                       {data.description.tabs[key].label}
                     </button>
                   ))}
@@ -680,8 +689,8 @@ export function ResultsReport({
                   ))}
                 </div>
               )}
-              <div className="before-after-card" style={{ background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 10, padding: "1.1rem 1.25rem" }}>
-                <p style={{ fontSize: "0.9rem", lineHeight: 1.75, color: (descView === "before" && data.description.tabs[descTab]?.current) ? "var(--muted)" : "var(--text)", margin: 0 }}>
+              <div className="before-after-card" style={{ background: descView === "after" ? "#1D3557" : "#FFFFFF", border: "0.5px solid var(--color-border)", borderRadius: 10, padding: "1.25rem 1.5rem", transition: "background 0.25s ease" }}>
+                <p style={{ fontSize: "0.9rem", lineHeight: 1.75, color: descView === "after" ? "#F1FAEE" : "#457B9D", margin: 0 }}>
                   {descView === "before" && data.description.tabs[descTab]?.current ? data.description.tabs[descTab].current : data.description.tabs[descTab]?.optimized ?? ""}
                 </p>
               </div>
@@ -712,21 +721,21 @@ export function ResultsReport({
           )}
           {(data.seo.detectedKeywords.length > 0 || data.seo.missingKeywords.length > 0) && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
-              {data.seo.detectedKeywords.length > 0 && <div><span style={label}>Detected in your listing</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.seo.detectedKeywords.map((kw) => <span key={kw} className="tag-good" style={pill("#F0FFF4", "#16A34A", "#BBF7D0")}>{kw}</span>)}</div></div>}
-              {data.seo.missingKeywords.length > 0 && <div><span style={label}>Missing — add these</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.seo.missingKeywords.map((kw) => <span key={kw} style={pill("var(--bg)", "var(--muted)", "var(--border)")}>+ {kw}</span>)}</div></div>}
+              {data.seo.detectedKeywords.length > 0 && <div><span style={label}>Detected in your listing</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.seo.detectedKeywords.map((kw) => <span key={kw} className="tag-good" style={pill("rgba(168,218,220,0.3)", "#1D3557", "#A8DADC")}>{kw}</span>)}</div></div>}
+              {data.seo.missingKeywords.length > 0 && <div><span style={label}>Missing — add these</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.seo.missingKeywords.map((kw) => <span key={kw} style={pill("#FFFFFF", "var(--muted)", "var(--border)")}>+ {kw}</span>)}</div></div>}
             </div>
           )}
           <Divider />
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: 160, background: "var(--bg)", border: `0.5px solid ${data.seo.instantBook ? "#BBF7D0" : "#FECACA"}`, borderRadius: 8, padding: "0.85rem 1rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <div style={{ flex: 1, minWidth: 160, background: "#FFFFFF", border: `0.5px solid ${data.seo.instantBook ? "#A8DADC" : "rgba(230,57,70,0.35)"}`, borderRadius: 8, padding: "0.85rem 1rem", display: "flex", alignItems: "center", gap: "0.6rem" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: data.seo.instantBook ? "#16A34A" : "#DC2626", flexShrink: 0 }} />
               <div>
                 <span style={label}>Instant Book</span>
                 <div style={{ fontSize: "0.82rem", fontWeight: 500, marginTop: "0.15rem", color: data.seo.instantBook ? "#16A34A" : "#DC2626" }}>{data.seo.instantBook ? "Enabled" : "Off — enable it"}</div>
               </div>
             </div>
-            {data.seo.estimatedResponseRate !== "N/A" && <div style={{ flex: 1, minWidth: 140, background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem 1rem" }}><span style={label}>Response rate</span><div style={{ fontSize: "0.9rem", fontWeight: 500, marginTop: "0.15rem" }}>{data.seo.estimatedResponseRate}</div></div>}
-            {data.seo.reviewCount > 0 && <div style={{ flex: 1, minWidth: 140, background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem 1rem" }}><span style={label}>Reviews</span><div style={{ fontSize: "0.9rem", fontWeight: 500, marginTop: "0.15rem" }}>{data.seo.reviewCount}</div></div>}
+            {data.seo.estimatedResponseRate !== "N/A" && <div style={{ flex: 1, minWidth: 140, background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem 1rem" }}><span style={label}>Response rate</span><div style={{ fontSize: "0.9rem", fontWeight: 500, marginTop: "0.15rem" }}>{data.seo.estimatedResponseRate}</div></div>}
+            {data.seo.reviewCount > 0 && <div style={{ flex: 1, minWidth: 140, background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem 1rem" }}><span style={label}>Reviews</span><div style={{ fontSize: "0.9rem", fontWeight: 500, marginTop: "0.15rem" }}>{data.seo.reviewCount}</div></div>}
           </div>
         </div>
 
@@ -738,11 +747,11 @@ export function ResultsReport({
           </div>
           {(data.amenities.present.length > 0 || data.amenities.missing.length > 0) && (
             <div className="amenity-gap" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "1.5rem", marginBottom: "1.75rem" }}>
-              {data.amenities.present.length > 0 && <div style={{ minWidth: 0, overflow: "hidden" }}><span style={label}>Present</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.amenities.present.map((a) => <span key={a} className="tag-good" style={{ ...pill("#F0FFF4", "#16A34A", "#BBF7D0"), whiteSpace: "normal", wordBreak: "break-word" }}>✓ {a}</span>)}</div></div>}
-              {data.amenities.missing.length > 0 && <div style={{ minWidth: 0, overflow: "hidden" }}><span style={label}>Missing</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.amenities.missing.map((a) => <span key={a} style={{ ...pill("var(--bg)", "var(--muted)", "var(--border)"), whiteSpace: "normal", wordBreak: "break-word" }}>+ {a}</span>)}</div></div>}
+              {data.amenities.present.length > 0 && <div style={{ minWidth: 0, overflow: "hidden" }}><span style={label}>Present</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.amenities.present.map((a) => <span key={a} className="tag-good" style={{ ...pill("rgba(168,218,220,0.3)", "#1D3557", "#A8DADC"), whiteSpace: "normal", wordBreak: "break-word" }}>✓ {a}</span>)}</div></div>}
+              {data.amenities.missing.length > 0 && <div style={{ minWidth: 0, overflow: "hidden" }}><span style={label}>Missing</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.amenities.missing.map((a) => <span key={a} style={{ ...pill("#FFFFFF", "var(--muted)", "var(--border)"), whiteSpace: "normal", wordBreak: "break-word" }}>+ {a}</span>)}</div></div>}
             </div>
           )}
-          {data.amenities.highlightThese.length > 0 && <div style={{ marginBottom: data.amenities.quickWins.length > 0 ? "1.75rem" : 0 }}><span style={label}>Highlight these in your listing</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.amenities.highlightThese.map((a) => <span key={a} className="tag-good" style={pill("#F0FFF4", "#16A34A", "#BBF7D0")}>✓ {a}</span>)}</div></div>}
+          {data.amenities.highlightThese.length > 0 && <div style={{ marginBottom: data.amenities.quickWins.length > 0 ? "1.75rem" : 0 }}><span style={label}>Highlight these in your listing</span><div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginTop: "0.6rem" }}>{data.amenities.highlightThese.map((a) => <span key={a} className="tag-good" style={pill("rgba(168,218,220,0.3)", "#1D3557", "#A8DADC")}>✓ {a}</span>)}</div></div>}
           {(data.amenities.issues.length > 0 || data.amenities.suggestions.length > 0) && (
             <div style={{ marginBottom: data.amenities.quickWins.length > 0 ? "1.25rem" : 0 }}>
               {data.amenities.issues.length > 0 && <div style={{ marginBottom: "0.75rem" }}><span style={{ ...label, marginBottom: "0.5rem" }}>Issues</span><BulletList items={data.amenities.issues} /></div>}
@@ -754,9 +763,9 @@ export function ResultsReport({
               <span style={label}>Quick wins</span>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginTop: "0.65rem" }}>
                 {data.amenities.quickWins.map((win, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "1rem", padding: "0.85rem 1rem", background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 8 }}>
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "1rem", padding: "0.85rem 1rem", background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8 }}>
                     <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{win.item}</span>
-                    <span style={pill("#FFF5F5", "var(--accent)", "#FFD5D7")}>+{win.estimatedImpact}% bookings</span>
+                    <span style={pill("rgba(230,57,70,0.1)", "#E63946", "rgba(230,57,70,0.35)")}>+{win.estimatedImpact}% bookings</span>
                     <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{win.cost}</span>
                   </div>
                 ))}
@@ -777,13 +786,13 @@ export function ResultsReport({
               {data.pricing.suggestions.length > 0 && <div><span style={{ ...label, marginBottom: "0.5rem" }}>Suggestions</span><BulletList items={data.pricing.suggestions} accent /></div>}
             </div>
           )}
-          {data.pricing.benchmarkNote && <div style={{ background: "#FFF5F5", border: "0.5px solid #FFD5D7", borderRadius: 10, padding: "1rem 1.25rem", fontSize: "0.875rem", lineHeight: 1.6, marginBottom: data.pricing.areaMedian > 0 ? "1.5rem" : 0 }}>{data.pricing.benchmarkNote}</div>}
+          {data.pricing.benchmarkNote && <div style={{ background: "#FFFFFF", border: "0.5px solid #A8DADC", borderRadius: 10, padding: "1rem 1.25rem", fontSize: "0.875rem", lineHeight: 1.6, color: "#457B9D", marginBottom: data.pricing.areaMedian > 0 ? "1.5rem" : 0 }}>{data.pricing.benchmarkNote}</div>}
           {data.pricing.areaMedian > 0 && (
             <div className="pricing-table" style={{ display: "flex", flexDirection: "column", gap: "0.55rem", marginBottom: "2rem" }}>
               {([{ lbl: "Your current rate", value: data.pricing.currentBase, accent: false }, { lbl: "Area median", value: data.pricing.areaMedian, accent: false }, { lbl: "Recommended", value: data.pricing.recommendedBase, accent: true }, { lbl: "Top 10%", value: data.pricing.topTenPercent, accent: false }] as const).filter((row) => row.value > 0).map(({ lbl, value, accent }) => (
                 <div key={lbl} style={{ display: "grid", gridTemplateColumns: "148px 1fr 44px", gap: "0.75rem", alignItems: "center" }}>
                   <span style={{ fontSize: "0.78rem", color: accent ? "var(--text)" : "var(--muted)", fontWeight: accent ? 500 : 400, textAlign: "right" }}>{lbl}</span>
-                  <div style={{ background: "var(--bg)", borderRadius: 4, height: 10, overflow: "hidden", border: "0.5px solid var(--border)" }}>
+                  <div style={{ background: "rgba(0,0,0,0.06)", borderRadius: 4, height: 10, overflow: "hidden", border: "none" }}>
                     <div style={{ height: "100%", width: `${(value / BAR_MAX) * 100}%`, background: accent ? "var(--accent)" : "#D4D4D4", borderRadius: 4, transition: "width 0.6s ease" }} />
                   </div>
                   <span style={{ fontSize: "0.82rem", fontWeight: accent ? 500 : 400, color: accent ? "var(--accent)" : "var(--text)" }}>${value}</span>
@@ -794,7 +803,7 @@ export function ResultsReport({
           {data.pricing.recommendedBase > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "0.5rem", marginBottom: data.pricing.nextHighDemandEvent.name ? "1.25rem" : 0 }}>
               {[{ lbl: "Base rate", val: `$${data.pricing.recommendedBase}/night` }, ...(data.pricing.recommendedWeekend > 0 ? [{ lbl: "Weekend", val: `$${data.pricing.recommendedWeekend}/night` }] : []), ...(data.pricing.recommendedPeakSeason > 0 ? [{ lbl: "Peak season", val: `$${data.pricing.recommendedPeakSeason}/night` }] : []), ...(data.pricing.recommendedCleaningFee > 0 ? [{ lbl: "Cleaning fee", val: `$${data.pricing.recommendedCleaningFee}` }] : [])].map(({ lbl, val }) => (
-                <div key={lbl} style={{ background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem" }}>
+                <div key={lbl} style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem" }}>
                   <span style={label}>{lbl}</span>
                   <div style={{ fontSize: "0.95rem", fontWeight: 500, marginTop: "0.4rem" }}>{val}</div>
                 </div>
@@ -802,7 +811,7 @@ export function ResultsReport({
             </div>
           )}
           {data.pricing.nextHighDemandEvent.name && (
-            <div style={{ background: "#FFF5F5", border: "0.5px solid #FFD5D7", borderRadius: 10, padding: "1.1rem 1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+            <div style={{ background: "rgba(230,57,70,0.08)", border: "0.5px solid rgba(230,57,70,0.3)", borderRadius: 10, padding: "1.1rem 1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
               <div>
                 <p style={{ margin: "0 0 0.2rem", fontSize: "0.72rem", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Upcoming high-demand event</p>
                 <p style={{ margin: "0 0 0.15rem", fontSize: "0.9rem", fontWeight: 500 }}>{data.pricing.nextHighDemandEvent.name}</p>
@@ -838,7 +847,7 @@ export function ResultsReport({
               <span style={label}>Issues</span>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", marginTop: "0.65rem", marginBottom: "1.75rem" }}>
                 {data.photos.issues.map((issue, i) => {
-                  const cfg = { critical: { dot: "#DC2626", bg: "#FFF5F5", border: "#FECACA", tag: "Critical", tagColor: "#DC2626" }, warning: { dot: "#D97706", bg: "#FFFBEB", border: "#FDE68A", tag: "Warning", tagColor: "#D97706" }, tip: { dot: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", tag: "Tip", tagColor: "#2563EB" } }[issue.severity];
+                  const cfg = { critical: { dot: "#E63946", bg: "rgba(230,57,70,0.08)", border: "rgba(230,57,70,0.3)", tag: "Critical", tagColor: "#E63946" }, warning: { dot: "#D97706", bg: "#FFFBEB", border: "#FDE68A", tag: "Warning", tagColor: "#D97706" }, tip: { dot: "#457B9D", bg: "rgba(69,123,157,0.08)", border: "#A8DADC", tag: "Tip", tagColor: "#457B9D" } }[issue.severity];
                   return (
                     <div key={i} style={{ display: "flex", gap: "0.85rem", padding: "0.85rem 1rem", background: cfg.bg, border: `0.5px solid ${cfg.border}`, borderRadius: 8, alignItems: "flex-start" }}>
                       <div style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.dot, flexShrink: 0, marginTop: 5 }} />
@@ -858,8 +867,8 @@ export function ResultsReport({
               <span style={label}>Recommended photo order</span>
               <div className="photo-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: "0.5rem", marginTop: "0.65rem" }}>
                 {data.photos.recommendedOrder.map((shot) => (
-                  <div key={shot.slot} style={{ background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem", display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
-                    <span style={{ width: 26, height: 26, borderRadius: 7, background: "#FFF5F5", border: "0.5px solid #FFD5D7", color: "var(--accent)", fontSize: "0.72rem", fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{shot.slot}</span>
+                  <div key={shot.slot} style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem", display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+                    <span style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(230,57,70,0.08)", border: "0.5px solid rgba(230,57,70,0.3)", color: "var(--accent)", fontSize: "0.72rem", fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{shot.slot}</span>
                     <div>
                       <p style={{ margin: "0 0 0.25rem", fontSize: "0.82rem", fontWeight: 500 }}>{shot.shotType}</p>
                       {shot.tip && <p style={{ margin: 0, fontSize: "0.76rem", color: "var(--muted)", lineHeight: 1.5 }}>{shot.tip}</p>}
@@ -874,21 +883,21 @@ export function ResultsReport({
         {/* 07 Action Plan */}
         <div className="report-section" style={card}>
           <SectionTitle n="07" title="Action Plan" sub={`${checked.size} of ${actionItems.length} complete`} />
-          <div style={{ background: "var(--bg)", border: "0.5px solid var(--border)", borderRadius: 4, height: 6, overflow: "hidden", marginBottom: "1.5rem" }}>
+          <div style={{ background: "rgba(0,0,0,0.06)", borderRadius: 4, height: 6, overflow: "hidden", marginBottom: "1.5rem" }}>
             <div style={{ height: "100%", width: `${actionItems.length > 0 ? (checked.size / actionItems.length) * 100 : 0}%`, background: "var(--accent)", borderRadius: 4, transition: "width 0.3s ease" }} />
           </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", flexDirection: "column", borderRadius: 10, overflow: "hidden", border: "0.5px solid var(--color-border)" }}>
             {actionItems.map((item, i) => {
-              const impactStyle = { high: pill("#FFF5F5", "var(--accent)", "#FFD5D7"), medium: pill("var(--bg)", "var(--muted)", "var(--border)"), low: pill("var(--bg)", "#A3A3A3", "var(--border)") }[item.impact];
+              const impactStyle = { high: pill("rgba(230,57,70,0.12)", "#E63946", "rgba(230,57,70,0.4)"), medium: pill("rgba(69,123,157,0.12)", "#457B9D", "#A8DADC"), low: pill("rgba(168,218,220,0.25)", "#1D3557", "#A8DADC") }[item.impact];
               const done = checked.has(i);
               return (
-                <div key={i} className="action-plan-item" onClick={() => toggle(i)} style={{ display: "flex", alignItems: "center", gap: "0.85rem", padding: "0.85rem 0", borderBottom: i < actionItems.length - 1 ? "0.5px solid var(--border)" : "none", cursor: "pointer", opacity: done ? 0.45 : 1, transition: "opacity 0.15s", userSelect: "none" }}>
+                <div key={i} className="action-plan-item" onClick={() => toggle(i)} style={{ display: "flex", alignItems: "center", gap: "0.85rem", padding: "0.85rem 1rem", background: "#FFFFFF", borderBottom: i < actionItems.length - 1 ? "0.5px solid var(--color-border)" : "none", cursor: "pointer", opacity: done ? 0.45 : 1, transition: "opacity 0.15s", userSelect: "none" }}>
                   <div style={{ width: 18, height: 18, borderRadius: 5, border: `0.5px solid ${done ? "var(--accent)" : "var(--border)"}`, background: done ? "var(--accent)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s, border-color 0.15s" }}>
                     {done && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1.5 4L3.5 6L8.5 1.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                   </div>
                   <span style={{ flex: 1, fontSize: "0.875rem", textDecoration: done ? "line-through" : "none", color: done ? "var(--muted)" : "var(--text)" }}>{item.action}</span>
                   <div style={{ display: "flex", gap: "0.35rem", flexShrink: 0 }}>
-                    <span style={pill("var(--bg)", "var(--muted)", "var(--border)")}>{item.effort}</span>
+                    <span style={pill("#FFFFFF", "var(--muted)", "var(--border)")}>{item.effort}</span>
                     <span style={impactStyle}>{item.impact}</span>
                   </div>
                 </div>

@@ -1,11 +1,30 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServer, supabaseAdmin } from "@/lib/supabase-server";
 
 function scoreMeta(score: number) {
-  if (score >= 70) return { bg: "#F0FFF4", color: "#16A34A", border: "#BBF7D0", label: "Good" };
-  if (score >= 40) return { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", label: "Fair" };
-  return { bg: "#FFF5F5", color: "#DC2626", border: "#FECACA", label: "Poor" };
+  if (score >= 75) return { bg: "rgba(168,218,220,0.3)", color: "#1D3557", border: "#A8DADC", label: "Good" };
+  if (score >= 50) return { bg: "rgba(69,123,157,0.15)", color: "#457B9D", border: "#457B9D", label: "Fair" };
+  return { bg: "rgba(230,57,70,0.12)", color: "#E63946", border: "#E63946", label: "Poor" };
+}
+
+function relativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return "Today at " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase();
+  }
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
+  }
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default async function DashboardPage() {
@@ -34,15 +53,15 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div style={{ background: "var(--bg)", minHeight: "100vh", color: "var(--text)" }}>
+    <div style={{ background: "var(--color-background)", minHeight: "100vh", color: "var(--color-text-primary)" }}>
 
       {/* Nav */}
-      <nav style={{ borderBottom: "0.5px solid var(--border)", background: "var(--surface)", padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
-        <Link href="/" style={{ fontWeight: 500, fontSize: "1rem", textDecoration: "none", color: "var(--text)" }}>
-          Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+      <nav style={{ background: "#FFFFFF", borderBottom: "0.5px solid var(--color-border)", padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <Image src="/logo-full.png" alt="Fix My Listing" height={30} width={150} style={{ height: 30, width: "auto" }} />
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link href="/" style={{ fontSize: "0.82rem", color: "var(--muted)", textDecoration: "none" }}>New Report</Link>
+          <Link href="/" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>New Report</Link>
         </div>
       </nav>
 
@@ -55,15 +74,19 @@ export default async function DashboardPage() {
         </p>
 
         {!reports || reports.length === 0 ? (
-          <div style={{ background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "3rem 2rem", textAlign: "center" }}>
-            <p style={{ color: "var(--muted)", fontSize: "0.9rem", marginBottom: "1.25rem" }}>
-              No reports yet. Analyze your first listing to get started.
+          <div style={{ background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "4rem 2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+            <div style={{ width: 80, height: 80, background: "#A8DADC", borderRadius: 12, flexShrink: 0 }} />
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 500, margin: 0, color: "var(--text)" }}>
+              No reports yet
+            </h2>
+            <p style={{ color: "var(--muted)", fontSize: "0.875rem", maxWidth: 380, lineHeight: 1.6, margin: 0 }}>
+              Paste your Airbnb listing URL on the home page to get your first free SEO report — it&apos;s free.
             </p>
             <Link
               href="/"
-              style={{ display: "inline-block", padding: "0.6rem 1.5rem", background: "var(--accent)", color: "#fff", borderRadius: "var(--radius)", fontWeight: 500, fontSize: "0.875rem", textDecoration: "none" }}
+              style={{ display: "inline-block", padding: "0.65rem 1.5rem", background: "#E63946", color: "#fff", borderRadius: "var(--radius)", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none", marginTop: "0.5rem" }}
             >
-              Analyze a listing →
+              Analyze my listing →
             </Link>
           </div>
         ) : (
@@ -71,9 +94,9 @@ export default async function DashboardPage() {
             {reports.map((report) => {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const result = report.result as any;
-              const score: number = result?.overallScore ?? 0;
+              const score: number = result?.overallScore ?? result?.currentScore ?? 0;
               const meta = scoreMeta(score);
-              const date = new Date(report.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+              const timeAgo = relativeTime(report.created_at);
               const listingName: string = result?.listingName || "";
               const displayUrl = report.listing_url
                 ? report.listing_url.replace(/https?:\/\/(www\.)?/, "").slice(0, 70)
@@ -89,9 +112,9 @@ export default async function DashboardPage() {
                       {listingName || displayUrl}
                     </p>
                     <p style={{ margin: "0 0 0.15rem", fontSize: "0.78rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {listingName ? displayUrl : date}
+                      {listingName ? displayUrl : timeAgo}
                     </p>
-                    {listingName && <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--muted)" }}>{date}</p>}
+                    {listingName && <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--muted)" }}>{timeAgo}</p>}
                   </div>
                   {score > 0 && (
                     <span style={pillStyle(meta.bg, meta.color, meta.border)}>

@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 const FEATURES = [
   "Airbnb search ranking score",
@@ -44,11 +45,11 @@ function PricingInner() {
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
+    <main style={{ minHeight: "100vh", background: "var(--color-background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
 
       {/* Logo */}
-      <Link href="/" style={{ fontWeight: 500, fontSize: "1.1rem", letterSpacing: "-0.01em", textDecoration: "none", color: "var(--text)", marginBottom: "2.5rem" }}>
-        Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+      <Link href="/" style={{ display: "inline-block", marginBottom: "2.5rem" }}>
+        <Image src="/logo-full.png" alt="Fix My Listing" height={40} width={200} style={{ height: 40, width: "auto", display: "block" }} />
       </Link>
 
       {/* Pricing card */}
@@ -81,7 +82,7 @@ function PricingInner() {
         <button
           onClick={handleCheckout}
           disabled={loading}
-          style={{ width: "100%", height: 44, background: "var(--accent)", color: "#fff", fontWeight: 500, fontSize: "0.9rem", borderRadius: "var(--radius)", border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, fontFamily: "inherit" }}
+          style={{ width: "100%", height: 44, background: "#E63946", color: "#fff", fontWeight: 600, fontSize: "0.9rem", borderRadius: 8, border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, fontFamily: "inherit" }}
         >
           {loading ? "Redirecting…" : "Unlock my full SEO report →"}
         </button>

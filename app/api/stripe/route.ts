@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createSupabaseRouteHandler } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/rateLimit";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  if (!rateLimit(ip, 5, 3600000)) {
+    return NextResponse.json(
+      { error: "Too many requests, please try again later", code: "RATE_LIMITED" },
+      { status: 429 }
+    );
+  }
+
   try {
     const supabase = createSupabaseRouteHandler(req);
     const { data: { user } } = await supabase.auth.getUser();

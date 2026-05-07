@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase";
 
 interface Profile {
@@ -46,14 +47,14 @@ export default function SettingsPage() {
   const hasFreeRunLeft = (profile?.free_runs_used ?? 0) < 1;
 
   return (
-    <main style={{ minHeight: "100vh", background: "var(--bg)", padding: "0" }}>
+    <main style={{ minHeight: "100vh", background: "var(--color-background)", padding: "0" }}>
 
       {/* Nav */}
-      <nav style={{ borderBottom: "0.5px solid var(--border)", background: "var(--surface)", padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
-        <Link href="/" style={{ fontWeight: 500, fontSize: "1rem", letterSpacing: "-0.01em", textDecoration: "none", color: "var(--text)" }}>
-          Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+      <nav style={{ background: "#FFFFFF", borderBottom: "0.5px solid var(--color-border)", padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <Image src="/logo-full.png" alt="Fix My Listing" height={30} width={150} style={{ height: 30, width: "auto" }} />
         </Link>
-        <Link href="/dashboard" style={{ fontSize: "0.875rem", color: "var(--muted)", textDecoration: "none" }}>
+        <Link href="/dashboard" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>
           ← Dashboard
         </Link>
       </nav>
@@ -85,9 +86,9 @@ export default function SettingsPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "0.4rem",
-                background: "#F0FFF4",
-                border: "0.5px solid #BBF7D0",
-                color: "#16A34A",
+                background: "rgba(168,218,220,0.25)",
+                border: "0.5px solid #A8DADC",
+                color: "#1D3557",
                 fontSize: "0.82rem",
                 fontWeight: 500,
                 padding: "0.35rem 0.75rem",
@@ -102,15 +103,15 @@ export default function SettingsPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "0.4rem",
-                  background: "#F5F5F5",
-                  border: "0.5px solid #E5E5E5",
+                  background: "var(--color-background)",
+                  border: "0.5px solid var(--color-border)",
                   color: "var(--muted)",
                   fontSize: "0.82rem",
                   fontWeight: 500,
                   padding: "0.35rem 0.75rem",
                   borderRadius: 999,
                 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#AAAAAA", display: "inline-block" }} />
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--muted)", display: "inline-block" }} />
                   {hasFreeRunLeft ? "Free tier — 1 report remaining" : "Free tier — 0 reports remaining"}
                 </span>
                 <Link href="/pricing" style={{ fontSize: "0.82rem", color: "var(--accent)", fontWeight: 500, textDecoration: "none" }}>

@@ -3,7 +3,15 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase";
+
+function isValidEmail(v: string): boolean {
+  const at = v.indexOf("@");
+  if (at < 1) return false;
+  const dot = v.indexOf(".", at);
+  return dot > at + 1 && dot < v.length - 1;
+}
 
 function AuthForm() {
   const router = useRouter();
@@ -14,27 +22,35 @@ function AuthForm() {
   const [tab, setTab] = useState<"signin" | "signup">(defaultTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [authError, setAuthError] = useState("");
   const [notice, setNotice] = useState("");
 
   const supabase = createClient();
 
+  const emailError = emailTouched && !isValidEmail(email) ? "Please enter a valid email address" : "";
+  const passwordError = passwordTouched && password.length < 8 ? "Password must be at least 8 characters" : "";
+  const isFormValid = isValidEmail(email) && password.length >= 8;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setEmailTouched(true);
+    setPasswordTouched(true);
+    if (!isFormValid) return;
+    setAuthError("");
     setNotice("");
     setLoading(true);
     try {
       if (tab === "signin") {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-        if (err) { setError(err.message); return; }
+        if (err) { setAuthError(err.message); return; }
         router.push(next);
       } else {
         const { data, error: err } = await supabase.auth.signUp({ email, password });
-        if (err) { setError(err.message); return; }
+        if (err) { setAuthError(err.message); return; }
         if (data.session) {
-          // Signed in immediately (email confirmation disabled)
           router.push(next);
         } else {
           setNotice("Check your email to confirm your account, then sign in.");
@@ -47,36 +63,43 @@ function AuthForm() {
   };
 
   const handleGoogle = async () => {
-    setError("");
+    setAuthError("");
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
-    if (err) setError(err.message);
+    if (err) setAuthError(err.message);
   };
 
-  const inputStyle: React.CSSProperties = {
+  const inputStyle = (hasError: boolean): React.CSSProperties => ({
     width: "100%",
-    height: 42,
+    height: 44,
     padding: "0 0.9rem",
-    borderRadius: "var(--radius)",
-    border: "0.5px solid var(--border)",
-    background: "var(--surface)",
-    color: "var(--text)",
+    borderRadius: 8,
+    border: `1px solid ${hasError ? "#E63946" : "#457B9D"}`,
+    background: "var(--color-surface)",
+    color: "var(--color-text-primary)",
     fontSize: "0.875rem",
     outline: "none",
     fontFamily: "inherit",
     boxSizing: "border-box",
+  });
+
+  const fieldErrorStyle: React.CSSProperties = {
+    margin: 0,
+    fontSize: "0.78rem",
+    color: "#E63946",
+    marginTop: "-0.25rem",
   };
 
   return (
-    <main style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
+    <main style={{ minHeight: "100vh", background: "var(--color-background)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem" }}>
 
       {/* Logo */}
-      <Link href="/" style={{ fontWeight: 500, fontSize: "1.1rem", letterSpacing: "-0.01em", textDecoration: "none", color: "var(--text)", marginBottom: "2.5rem" }}>
-        Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+      <Link href="/" style={{ display: "inline-block", marginBottom: "2.5rem" }}>
+        <Image src="/logo-full.png" alt="Fix My Listing" height={40} width={200} style={{ height: 40, width: "auto", display: "block" }} />
       </Link>
 
       {/* Card */}
@@ -87,8 +110,8 @@ function AuthForm() {
           {(["signin", "signup"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => { setTab(t); setError(""); setNotice(""); }}
-              style={{ flex: 1, padding: "0.6rem", border: "none", background: "none", fontSize: "0.875rem", fontWeight: tab === t ? 500 : 400, color: tab === t ? "var(--text)" : "var(--muted)", cursor: "pointer", borderBottom: tab === t ? "1.5px solid var(--text)" : "1.5px solid transparent", fontFamily: "inherit", transition: "color 0.15s" }}
+              onClick={() => { setTab(t); setAuthError(""); setNotice(""); setEmailTouched(false); setPasswordTouched(false); }}
+              style={{ flex: 1, padding: "0.6rem", border: "none", background: "none", fontSize: "0.875rem", fontWeight: tab === t ? 600 : 400, color: tab === t ? "var(--color-text-primary)" : "var(--color-text-secondary)", cursor: "pointer", borderBottom: tab === t ? "2px solid #E63946" : "2px solid transparent", fontFamily: "inherit", transition: "color 0.15s" }}
             >
               {t === "signin" ? "Sign in" : "Create account"}
             </button>
@@ -96,36 +119,45 @@ function AuthForm() {
         </div>
 
         {notice && (
-          <div style={{ background: "#F0FFF4", border: "0.5px solid #BBF7D0", borderRadius: 8, padding: "0.75rem 1rem", marginBottom: "1.25rem", fontSize: "0.82rem", color: "#16A34A" }}>
+          <div style={{ background: "rgba(168,218,220,0.25)", border: "0.5px solid #A8DADC", borderRadius: 8, padding: "0.75rem 1rem", marginBottom: "1.25rem", fontSize: "0.82rem", color: "#1D3557" }}>
             {notice}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <input
-            type="email"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={inputStyle}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            style={inputStyle}
-          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setAuthError(""); }}
+              onBlur={() => setEmailTouched(true)}
+              required
+              style={inputStyle(!!emailError)}
+            />
+            {emailError && <p style={fieldErrorStyle}>{emailError}</p>}
+          </div>
 
-          {error && <p style={{ margin: 0, fontSize: "0.78rem", color: "#DC2626" }}>{error}</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setAuthError(""); }}
+              onBlur={() => setPasswordTouched(true)}
+              required
+              minLength={8}
+              style={inputStyle(!!passwordError)}
+            />
+            {passwordError && <p style={fieldErrorStyle}>{passwordError}</p>}
+          </div>
+
+          {authError && <p style={{ margin: 0, fontSize: "0.78rem", color: "#DC2626" }}>{authError}</p>}
 
           <button
             type="submit"
-            disabled={loading}
-            style={{ height: 42, background: "var(--accent)", color: "#fff", fontWeight: 500, fontSize: "0.875rem", borderRadius: "var(--radius)", border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, fontFamily: "inherit", marginTop: "0.25rem" }}
+            disabled={loading || !isFormValid}
+            style={{ height: 44, background: "#E63946", color: "#fff", fontWeight: 600, fontSize: "0.875rem", borderRadius: 8, border: "none", cursor: (loading || !isFormValid) ? "not-allowed" : "pointer", opacity: (loading || !isFormValid) ? 0.7 : 1, fontFamily: "inherit", marginTop: "0.25rem" }}
           >
             {loading ? "…" : tab === "signin" ? "Sign in" : "Create account →"}
           </button>
@@ -141,7 +173,7 @@ function AuthForm() {
         {/* Google */}
         <button
           onClick={handleGoogle}
-          style={{ width: "100%", height: 42, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.65rem", background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", fontSize: "0.875rem", fontWeight: 500, color: "var(--text)", cursor: "pointer", fontFamily: "inherit" }}
+          style={{ width: "100%", height: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.65rem", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: "0.875rem", fontWeight: 600, color: "var(--color-text-primary)", cursor: "pointer", fontFamily: "inherit" }}
         >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
             <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908C16.658 14.015 17.64 11.707 17.64 9.2z" fill="#4285F4"/>

@@ -112,7 +112,7 @@ function AnalyzePageInner() {
       <main
         style={{
           minHeight: "100vh",
-          background: "var(--bg)",
+          background: "var(--color-background)",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -122,7 +122,7 @@ function AnalyzePageInner() {
       >
         <div style={{ marginBottom: "3rem", textAlign: "center" }}>
           <span style={{ fontWeight: 500, fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
-            Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+            <img src="/logo-full.png" alt="Fix My Listing" style={{ height: 36, display: "block" }} />
           </span>
         </div>
         <div
@@ -130,7 +130,7 @@ function AnalyzePageInner() {
             width: "100%",
             maxWidth: 440,
             background: "var(--surface)",
-            border: "0.5px solid #FECACA",
+            border: "0.5px solid rgba(230,57,70,0.35)",
             borderRadius: "var(--radius)",
             padding: "2.25rem 2rem",
             textAlign: "center",
@@ -183,7 +183,7 @@ function AnalyzePageInner() {
     <main
       style={{
         minHeight: "100vh",
-        background: "var(--bg)",
+        background: "var(--color-background)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -194,7 +194,7 @@ function AnalyzePageInner() {
       {/* Logo */}
       <div style={{ marginBottom: "3.5rem", textAlign: "center" }}>
         <span style={{ fontWeight: 500, fontSize: "1.1rem", letterSpacing: "-0.01em" }}>
-          Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+          <img src="/logo-full.png" alt="Fix My Listing" style={{ height: 36, display: "block" }} />
         </span>
       </div>
 
@@ -261,8 +261,8 @@ function AnalyzePageInner() {
                       width: 16,
                       height: 16,
                       borderRadius: "50%",
-                      border: "2px solid #FFE0E0",
-                      borderTop: "2px solid #FF5A5F",
+                      border: "2px solid rgba(230,57,70,0.2)",
+                      borderTop: "2px solid #E63946",
                       flexShrink: 0,
                       animation: "spin 0.8s linear infinite",
                     }}

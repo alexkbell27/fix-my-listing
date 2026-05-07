@@ -1,43 +1,99 @@
 @import "tailwindcss";
 
+/* ── Brand palette ───────────────────────────────────────────────────────── */
 :root {
-  --accent: #FF5A5F;
-  --border: #E5E5E5;
-  --bg: #FAFAFA;
+  --strawberry:   #E63946;
+  --honeydew:     #F1FAEE;
+  --frosted-blue: #A8DADC;
+  --steel-blue:   #457B9D;
+  --deep-space:   #1D3557;
+
+  /* Semantic */
+  --color-primary:        #E63946;
+  --color-primary-dark:   #C1121F;
+  --color-background:     #F1FAEE;
+  --color-surface:        #FFFFFF;
+  --color-border:         #A8DADC;
+  --color-border-light:   #D4ECED;
+  --color-text-primary:   #1D3557;
+  --color-text-secondary: #457B9D;
+  --color-text-tertiary:  #7BA3BF;
+  --color-accent:         #457B9D;
+  --color-highlight:      #A8DADC;
+
+  /* Legacy aliases — existing components use these */
+  --bg:      #F1FAEE;
   --surface: #FFFFFF;
-  --text: #111111;
-  --muted: #6B6B6B;
-  --radius: 12px;
+  --border:  #A8DADC;
+  --text:    #1D3557;
+  --muted:   #457B9D;
+  --accent:  #E63946;
+  --radius:  12px;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ── Base ────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   font-weight: 400;
+  font-size: 15px;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
 }
 
-.cta-hover {
-  transition: transform 0.15s ease;
-}
-.cta-hover:hover {
-  transform: scale(1.02);
+/* ── Typography helpers ──────────────────────────────────────────────────── */
+.font-serif { font-family: var(--font-serif, Georgia, serif); }
+
+h2 { font-family: var(--font-serif, Georgia, serif); }
+
+/* ── CTA hover ───────────────────────────────────────────────────────────── */
+.cta-hover { transition: background 0.15s ease, transform 0.15s ease; }
+.cta-hover:hover { background: var(--color-primary-dark) !important; }
+
+/* ── Print badge helpers ─────────────────────────────────────────────────── */
+.tag-bad  { }
+.tag-warn { }
+.tag-good { }
+
+@media print {
+  .tag-bad  { background: rgba(230,57,70,0.12)  !important; color: #C1121F !important; }
+  .tag-warn { background: rgba(69,123,157,0.15) !important; color: #2E5775 !important; }
+  .tag-good { background: rgba(168,218,220,0.3) !important; color: #1D3557 !important; }
 }
 
+/* ── Skeleton shimmer ────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #F1FAEE 25%, #E2F0F1 50%, #F1FAEE 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+/* ── Mobile responsiveness ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .hero-input-row { flex-direction: column !important; }
+  .stat-grid { grid-template-columns: 1fr 1fr !important; }
+  .pricing-grid { grid-template-columns: 1fr !important; }
+  .metric-cards { grid-template-columns: 1fr 1fr !important; }
+  .score-section { grid-template-columns: 1fr !important; }
+  .action-plan-effort { display: none !important; }
+  .nav-links { display: none !important; }
+}
+
+/* ── Word-vanish animation (landing page headline) ───────────────────────── */
 @keyframes wordVanish {
-  0%   { opacity: 1;   filter: blur(0px);  letter-spacing: -0.01em; }
-  25%  { opacity: 0.5; filter: blur(5px);  letter-spacing: 0.06em;  }
-  50%  { opacity: 0;   filter: blur(12px); letter-spacing: 0.12em;  }
-  65%  { opacity: 0;   filter: blur(12px); letter-spacing: 0.12em;  }
-  85%  { opacity: 0.6; filter: blur(4px);  letter-spacing: 0.02em;  }
-  100% { opacity: 1;   filter: blur(0px);  letter-spacing: -0.01em; }
+  0%   { opacity: 1; filter: blur(0px); }
+  35%  { opacity: 0; filter: blur(12px); }
+  60%  { opacity: 0; filter: blur(12px); }
+  100% { opacity: 1; filter: blur(0px); }
 }
-
 .word-vanish {
   display: inline-block;
   animation: wordVanish 2.2s ease-in-out 0.4s 1 both;

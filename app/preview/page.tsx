@@ -58,7 +58,7 @@ function LoadingScreen({ listingId }: { listingId: string }) {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "var(--bg)",
+      background: "var(--color-background)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -66,8 +66,8 @@ function LoadingScreen({ listingId }: { listingId: string }) {
       padding: "2rem",
     }}>
       {/* Logo */}
-      <div style={{ marginBottom: "3rem", fontWeight: 500, fontSize: "1rem", color: "var(--text)" }}>
-        Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+      <div style={{ marginBottom: "3rem" }}>
+        <img src="/logo-full.png" alt="Fix My Listing" style={{ height: 36, display: "block" }} />
       </div>
 
       <div style={{ width: "100%", maxWidth: 400, textAlign: "center" }}>
@@ -81,7 +81,7 @@ function LoadingScreen({ listingId }: { listingId: string }) {
         {/* Progress bar */}
         <div style={{
           height: 4,
-          background: "#E5E5E5",
+          background: "var(--color-border)",
           borderRadius: 999,
           overflow: "hidden",
           marginBottom: "1.25rem",
@@ -112,7 +112,7 @@ function LoadingScreen({ listingId }: { listingId: string }) {
               width: 6,
               height: 6,
               borderRadius: "50%",
-              background: i <= stepIndex ? "var(--accent)" : "#E5E5E5",
+              background: i <= stepIndex ? "var(--accent)" : "var(--color-border)",
               transition: "background 0.2s",
             }} />
           ))}
@@ -193,8 +193,8 @@ function PreviewInner() {
   const nightlyRate = seededInt(seed, 4, 89, 229);
 
   const scoreColor = score >= 70 ? "#16A34A" : score >= 40 ? "#D97706" : "#DC2626";
-  const scoreBg = score >= 70 ? "#F0FFF4" : score >= 40 ? "#FFFBEB" : "#FFF5F5";
-  const scoreBorder = score >= 70 ? "#BBF7D0" : score >= 40 ? "#FDE68A" : "#FECACA";
+  const scoreBg = score >= 70 ? "rgba(168,218,220,0.3)" : score >= 40 ? "#FFFBEB" : "rgba(230,57,70,0.1)";
+  const scoreBorder = score >= 70 ? "#A8DADC" : score >= 40 ? "#FDE68A" : "rgba(230,57,70,0.35)";
   const scoreLabel = score >= 70 ? "Good" : score >= 40 ? "Fair" : "Needs work";
 
   const encodedUrl = encodeURIComponent(url);
@@ -208,12 +208,12 @@ function PreviewInner() {
   if (!ready) return <LoadingScreen listingId={listingId} />;
 
   return (
-    <div style={{ background: "var(--bg)", minHeight: "100vh", color: "var(--text)" }}>
+    <div style={{ background: "var(--color-background)", minHeight: "100vh", color: "var(--color-text-primary)" }}>
 
       {/* Nav */}
       <nav style={{
-        borderBottom: "0.5px solid var(--border)",
-        background: "var(--surface)",
+        background: "#FFFFFF",
+        borderBottom: "0.5px solid var(--color-border)",
         padding: "0 2rem",
         height: 56,
         display: "flex",
@@ -223,10 +223,10 @@ function PreviewInner() {
         top: 0,
         zIndex: 50,
       }}>
-        <Link href="/" style={{ fontWeight: 500, fontSize: "1rem", textDecoration: "none", color: "var(--text)" }}>
-          Fix My <span style={{ color: "var(--accent)" }}>Listing</span>
+        <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <img src="/logo-full.png" alt="Fix My Listing" style={{ height: 30 }} />
         </Link>
-        <Link href={`/auth?next=${encodeURIComponent(`/preview?url=${encodedUrl}`)}`} style={{ fontSize: "0.82rem", color: "var(--muted)", textDecoration: "none" }}>
+        <Link href={`/auth?next=${encodeURIComponent(`/preview?url=${encodedUrl}`)}`} style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>
           Sign in
         </Link>
       </nav>
@@ -344,7 +344,7 @@ function PreviewInner() {
       }}>
         <div style={{
           background: "#fff",
-          border: "1px solid #E5E5E5",
+          border: "1px solid var(--color-border)",
           borderRadius: 12,
           padding: "1.75rem 2rem",
           maxWidth: 420,
