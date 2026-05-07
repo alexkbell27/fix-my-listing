@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseRouteHandler, supabaseAdmin } from "@/lib/supabase-server";
 
@@ -369,134 +369,141 @@ Return ONLY this exact JSON structure — no markdown, no preamble:
   ]
 }`;
 
+// ─── Background analysis ──────────────────────────────────────────────────────
+
+async function runAnalysis(opts: {
+  id: string;
+  userId: string;
+  userEmail: string | undefined;
+  listingUrl: string | null;
+  manualTitle: string | undefined;
+  manualDescription: string | undefined;
+  markFreeRun: boolean;
+}) {
+  const { id, userId, userEmail, listingUrl, manualTitle, manualDescription, markFreeRun } = opts;
+
+  let listingContext = "";
+
+  if (listingUrl) {
+    const listingData = await scrapeListingWithPricingRetry(listingUrl);
+
+    const locObj = (typeof listingData.location === "object" && listingData.location !== null ? listingData.location : {}) as Record<string, unknown>;
+    const addrObj = (typeof listingData.address === "object" && listingData.address !== null ? listingData.address : {}) as Record<string, unknown>;
+    const city = String(locObj.city ?? addrObj.city ?? listingData.city ?? listingData.neighborhood ?? "");
+    const bedrooms = Number(listingData.bedrooms ?? listingData.bedroomsCount ?? 1);
+
+    const compCheckIn = toDateStr(addMonths(new Date(), 3));
+    const compCheckOut = toDateStr(addDays(addMonths(new Date(), 3), 2));
+    const comps = city ? await scrapeComps(city, bedrooms, compCheckIn, compCheckOut) : [];
+
+    listingContext = [
+      `Individual listing data (structured JSON):\n\n${JSON.stringify(listingData, null, 2)}`,
+      `Comp listings — ${comps.length} nearby listings with similar bedroom count in "${city || "same area"}":\n\n${JSON.stringify(comps, null, 2)}`,
+    ].join("\n\n---\n\n");
+  }
+
+  const parts: string[] = [];
+  if (listingUrl) parts.push(`Listing URL: ${listingUrl}`);
+  if (listingContext) parts.push(listingContext);
+  if (manualTitle) parts.push(`Title: ${manualTitle}`);
+  if (manualDescription) parts.push(`Description: ${manualDescription}`);
+  const userMessage = parts.join("\n\n---\n\n");
+
+  const message = await anthropic.messages.create({
+    model: "claude-opus-4-7",
+    max_tokens: 8192,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: userMessage }],
+  });
+
+  const content = message.content[0];
+  if (content.type !== "text") throw new Error("Unexpected Claude response type");
+
+  console.log("[analyze] raw Claude response:", content.text);
+  let parsed: Omit<AnalysisResult, "id" | "url" | "createdAt">;
+  try {
+    parsed = JSON.parse(content.text);
+  } catch {
+    const stripped = content.text.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/, "").trim();
+    parsed = JSON.parse(stripped);
+  }
+
+  const result: AnalysisResult = {
+    id,
+    url: listingUrl,
+    createdAt: new Date().toISOString(),
+    ...parsed,
+  };
+
+  await supabaseAdmin.from("reports").insert({
+    id,
+    user_id: userId,
+    listing_url: listingUrl,
+    result,
+  });
+
+  if (markFreeRun) {
+    await supabaseAdmin.from("profiles").update({ free_runs_used: 1 }).eq("id", userId);
+  }
+
+  console.log(`[analyze] job ${id} complete for user ${userEmail}`);
+}
+
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  let listingUrl: string | null = null;
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const supabase = createSupabaseRouteHandler(req);
+  const { data: { user } } = await supabase.auth.getUser();
 
-  try {
-    // ── Auth ──────────────────────────────────────────────────────────────────
-    const supabase = createSupabaseRouteHandler(req);
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    // ── Check run limits ──────────────────────────────────────────────────────
-    let { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("free_runs_used, is_subscribed")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile) {
-      // Trigger may not have fired yet — create the profile now
-      await supabaseAdmin.from("profiles").insert({ id: user.id, email: user.email });
-      profile = { free_runs_used: 0, is_subscribed: false };
-    }
-
-    if (profile.free_runs_used >= 1 && !profile.is_subscribed) {
-      return NextResponse.json({ error: "UPGRADE_REQUIRED" }, { status: 402 });
-    }
-
-    // ── Parse body ────────────────────────────────────────────────────────────
-    const body = await req.json();
-    listingUrl = body.listingUrl ?? null;
-    const { manualTitle, manualDescription } = body;
-
-    if (!listingUrl && !manualDescription) {
-      return NextResponse.json({ error: "Provide a listingUrl or manualDescription" }, { status: 400 });
-    }
-
-    // ── Step 1: Scrape listing + comps ────────────────────────────────────────
-    let listingContext = "";
-    let listingName = "";
-
-    if (listingUrl) {
-      const listingData = await scrapeListingWithPricingRetry(listingUrl);
-
-      listingName = String(
-        listingData.name ?? listingData.title ?? listingData.roomTitle ?? listingData.roomName ?? ""
-      );
-
-      const locObj = (typeof listingData.location === "object" && listingData.location !== null ? listingData.location : {}) as Record<string, unknown>;
-      const addrObj = (typeof listingData.address === "object" && listingData.address !== null ? listingData.address : {}) as Record<string, unknown>;
-      const city = String(locObj.city ?? addrObj.city ?? listingData.city ?? listingData.neighborhood ?? "");
-      const bedrooms = Number(listingData.bedrooms ?? listingData.bedroomsCount ?? 1);
-
-      const compCheckIn = toDateStr(addMonths(new Date(), 3));
-      const compCheckOut = toDateStr(addDays(addMonths(new Date(), 3), 2));
-      const comps = city ? await scrapeComps(city, bedrooms, compCheckIn, compCheckOut) : [];
-
-      listingContext = [
-        `Individual listing data (structured JSON):\n\n${JSON.stringify(listingData, null, 2)}`,
-        `Comp listings — ${comps.length} nearby listings with similar bedroom count in "${city || "same area"}":\n\n${JSON.stringify(comps, null, 2)}`,
-      ].join("\n\n---\n\n");
-    }
-
-    // ── Step 2: Build user message ────────────────────────────────────────────
-    const parts: string[] = [];
-    if (listingUrl) parts.push(`Listing URL: ${listingUrl}`);
-    if (listingContext) parts.push(listingContext);
-    if (manualTitle) parts.push(`Title: ${manualTitle}`);
-    if (manualDescription) parts.push(`Description: ${manualDescription}`);
-    const userMessage = parts.join("\n\n---\n\n");
-
-    // ── Step 3: Claude analysis ───────────────────────────────────────────────
-    const message = await anthropic.messages.create({
-      model: "claude-opus-4-7",
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
-    });
-
-    const content = message.content[0];
-    if (content.type !== "text") {
-      return NextResponse.json({ error: "Unexpected Claude response type" }, { status: 500 });
-    }
-
-    // ── Step 4: Parse JSON ────────────────────────────────────────────────────
-    console.log("[analyze] raw Claude response:", content.text);
-    let parsed: Omit<AnalysisResult, "id" | "url" | "createdAt">;
-    try {
-      parsed = JSON.parse(content.text);
-    } catch {
-      const stripped = content.text.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/, "").trim();
-      parsed = JSON.parse(stripped);
-    }
-
-    // ── Step 5: Persist to Supabase ───────────────────────────────────────────
-    const id = crypto.randomUUID();
-    const result: AnalysisResult = {
-      id,
-      url: listingUrl,
-      createdAt: new Date().toISOString(),
-      ...parsed,
-    };
-
-    await supabaseAdmin.from("reports").insert({
-      id,
-      user_id: user.id,
-      listing_url: listingUrl,
-      result,
-    });
-
-    // ── Step 6: Mark free run used (subscribed users run unlimited, no decrement) ──
-    if (profile.free_runs_used < 1) {
-      await supabaseAdmin.from("profiles").update({ free_runs_used: 1 }).eq("id", user.id);
-    }
-
-    return NextResponse.json({ id });
-
-  } catch (error) {
-    console.error("[analyze] error:", error);
-
-    if (error instanceof SyntaxError) {
-      return NextResponse.json({ error: "Claude returned malformed JSON" }, { status: 500 });
-    }
-
-    const message = error instanceof Error ? error.message : "Analysis failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
+
+  // ── Check run limits ──────────────────────────────────────────────────────
+  let { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("free_runs_used, is_subscribed")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) {
+    await supabaseAdmin.from("profiles").insert({ id: user.id, email: user.email });
+    profile = { free_runs_used: 0, is_subscribed: false };
+  }
+
+  if (profile.free_runs_used >= 1 && !profile.is_subscribed) {
+    return NextResponse.json({ error: "UPGRADE_REQUIRED" }, { status: 402 });
+  }
+
+  // ── Parse body ────────────────────────────────────────────────────────────
+  const body = await req.json();
+  const listingUrl: string | null = body.listingUrl ?? null;
+  const { manualTitle, manualDescription } = body;
+
+  if (!listingUrl && !manualDescription) {
+    return NextResponse.json({ error: "Provide a listingUrl or manualDescription" }, { status: 400 });
+  }
+
+  // ── Schedule background work and return job ID immediately ────────────────
+  const id = crypto.randomUUID();
+  const markFreeRun = profile.free_runs_used < 1 && !profile.is_subscribed;
+
+  after(async () => {
+    try {
+      await runAnalysis({
+        id,
+        userId: user.id,
+        userEmail: user.email,
+        listingUrl,
+        manualTitle,
+        manualDescription,
+        markFreeRun,
+      });
+    } catch (error) {
+      console.error(`[analyze] background job ${id} failed:`, error);
+    }
+  });
+
+  return NextResponse.json({ id });
 }

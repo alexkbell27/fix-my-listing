@@ -11,84 +11,100 @@ const STEPS = [
   "Building your ranking plan",
 ];
 
-// Elapsed-time thresholds (as fraction of estimated total) for steps 0–2.
-// Step 3 only completes when the API promise actually resolves.
-const THRESHOLDS = [0.15, 0.40, 0.70];
-
-type ApiOutcome = { id: string | null } | { error: string } | { redirect: true };
+// Step auto-advances every N ms while waiting for the background job
+const STEP_INTERVAL_MS = 15_000;
+// Max time to poll before giving up
+const POLL_TIMEOUT_MS = 120_000;
 
 function AnalyzePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const url = searchParams.get("url");
 
-  // step 0–3: that many steps complete; step 3 active = waiting for API
-  // step 4: all complete, redirect pending
   const [step, setStep] = useState(0);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   const didFire = useRef(false);
 
+  // ── Step 1: POST to /api/analyze → get job ID immediately ─────────────────
   useEffect(() => {
     if (didFire.current) return;
     didFire.current = true;
 
-    const startTime = Date.now();
-    // No URL = demo mode; resolve automatically so steps still animate nicely
-    const estimatedMs = url ? 60_000 : 8_000;
+    if (!url) {
+      // Demo mode: skip API, animate, then go to mock report
+      const t = setTimeout(() => router.push("/results/mock"), 8_000);
+      return () => clearTimeout(t);
+    }
 
-    // ── Fire API call immediately ──────────────────────────────────────────
-    const apiPromise: Promise<ApiOutcome> = url
-      ? (async (): Promise<ApiOutcome> => {
-          try {
-            const r = await fetch("/api/analyze", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ listingUrl: url }),
-            });
-            if (r.status === 401) {
-              router.push(`/auth?next=${encodeURIComponent(`/analyze?url=${url}`)}`);
-              return { redirect: true };
-            }
-            if (r.status === 402) {
-              router.push(`/pricing${url ? `?url=${encodeURIComponent(url)}` : ""}`);
-              return { redirect: true };
-            }
-            const data = await r.json();
-            if (r.ok && data.id) return { id: data.id as string };
-            return { error: (data.error as string) ?? "Analysis failed. Please try again." };
-          } catch {
-            return { error: "Network error. Please check your connection and try again." };
-          }
-        })()
-      : new Promise<ApiOutcome>((resolve) =>
-          setTimeout(() => resolve({ id: null }), estimatedMs)
-        );
-
-    // ── Poll elapsed time every 500 ms → advance steps 0–2 ────────────────
-    const poll = setInterval(() => {
-      const pct = (Date.now() - startTime) / estimatedMs;
-      const met = THRESHOLDS.filter((t) => pct >= t).length;
-      // Never auto-advance past step 3; step 3 only completes via API resolve
-      setStep((prev) => Math.max(prev, Math.min(met, 3)));
-    }, 500);
-
-    // ── When API settles ───────────────────────────────────────────────────
-    apiPromise.then((outcome) => {
-      clearInterval(poll);
-      if ("redirect" in outcome) return; // router.push already called
-      if ("error" in outcome) {
-        setApiError(outcome.error);
-        return;
+    (async () => {
+      try {
+        const r = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listingUrl: url }),
+        });
+        if (r.status === 401) {
+          router.push(`/auth?next=${encodeURIComponent(`/analyze?url=${url}`)}`);
+          return;
+        }
+        if (r.status === 402) {
+          router.push(`/pricing?url=${encodeURIComponent(url)}`);
+          return;
+        }
+        const data = await r.json();
+        if (r.ok && data.id) {
+          setJobId(data.id);
+        } else {
+          setApiError(data.error ?? "Analysis failed. Please try again.");
+        }
+      } catch {
+        setApiError("Network error. Please check your connection and try again.");
       }
-      setStep(4); // all checkmarks green
-      setTimeout(() => {
-        router.push(outcome.id ? `/results/${outcome.id}` : "/results/mock");
-      }, 600);
-    });
-
-    return () => clearInterval(poll);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Step animation — runs independently of API state ──────────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+    }, STEP_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ── Step 2: Poll /api/results/[id] every 3 s until result is ready ─────────
+  useEffect(() => {
+    if (!jobId) return;
+
+    const started = Date.now();
+
+    const interval = setInterval(async () => {
+      if (Date.now() - started > POLL_TIMEOUT_MS) {
+        clearInterval(interval);
+        setApiError("Analysis is taking longer than expected. Please try again.");
+        return;
+      }
+
+      try {
+        const r = await fetch(`/api/results/${jobId}`);
+        if (r.status === 200) {
+          clearInterval(interval);
+          setStep(4);
+          setTimeout(() => router.push(`/results/${jobId}`), 600);
+        } else if (r.status === 401) {
+          clearInterval(interval);
+          router.push(`/auth?next=${encodeURIComponent(`/results/${jobId}`)}`);
+        }
+        // 404 = still processing — keep polling
+      } catch {
+        // transient network error — keep polling
+      }
+    }, 3_000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId]);
 
   // ── Error state ────────────────────────────────────────────────────────────
   if (apiError) {
@@ -128,7 +144,7 @@ function AnalyzePageInner() {
           </p>
           <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
             <Link
-              href="/analyze"
+              href="/"
               style={{
                 padding: "0.6rem 1.25rem",
                 borderRadius: 8,
