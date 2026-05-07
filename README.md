@@ -74,3 +74,4 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Anthropic** — `claude-opus-4-7` for listing analysis
 - **Apify** — `tri_angle~airbnb-rooms-urls-scraper` (listing) + `tri_angle~airbnb-scraper` (comps)
 - **react-to-pdf** — PDF export
+# fix-my-listing
