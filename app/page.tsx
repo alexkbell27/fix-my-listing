@@ -46,11 +46,18 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{ free_runs_used: number; is_subscribed: boolean } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [invisibleOpacity, setInvisibleOpacity] = useState(1);
   const [contactFields, setContactFields] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setInvisibleOpacity(0), 400);
+    const t2 = setTimeout(() => setInvisibleOpacity(1), 1600);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
@@ -84,7 +91,7 @@ export default function HomePage() {
     return () => document.removeEventListener("mousedown", handler);
   }, [dropdownOpen]);
 
-  const handleContact = useCallback(async (e: React.FormEvent) => {
+  const handleContact = useCallback(async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setContactStatus("sending");
     try {
@@ -275,13 +282,16 @@ export default function HomePage() {
           <h1 style={{
             fontSize: "clamp(2rem, 5.5vw, 3.1rem)",
             fontWeight: 500,
-            lineHeight: 1.1,
+            lineHeight: 1.15,
             letterSpacing: "-0.03em",
             marginBottom: "0.85rem",
             color: "var(--text)",
           }}>
             {user ? "Find out why you're not ranking" : (
-              <>Most Airbnb listings are invisible<br />in search. Is yours?</>
+              <>
+                Most Airbnb listings<br />
+                are{" "}<span style={{ color: "var(--accent)", fontStyle: "italic", opacity: invisibleOpacity, transition: "opacity 0.7s ease-in-out" }}>invisible</span> in search.
+              </>
             )}
           </h1>
 
@@ -294,7 +304,7 @@ export default function HomePage() {
           }}>
             {user
               ? "Paste your listing URL to run a full Airbnb SEO analysis"
-              : "Your listing is invisible to half your guests."}
+              : "Is yours?"}
           </p>
 
           {/* Sales copy — logged-out only */}

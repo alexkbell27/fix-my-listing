@@ -28,3 +28,17 @@ body {
 .cta-hover:hover {
   transform: scale(1.02);
 }
+
+@keyframes wordVanish {
+  0%   { opacity: 1;   filter: blur(0px);  letter-spacing: -0.01em; }
+  25%  { opacity: 0.5; filter: blur(5px);  letter-spacing: 0.06em;  }
+  50%  { opacity: 0;   filter: blur(12px); letter-spacing: 0.12em;  }
+  65%  { opacity: 0;   filter: blur(12px); letter-spacing: 0.12em;  }
+  85%  { opacity: 0.6; filter: blur(4px);  letter-spacing: 0.02em;  }
+  100% { opacity: 1;   filter: blur(0px);  letter-spacing: -0.01em; }
+}
+
+.word-vanish {
+  display: inline-block;
+  animation: wordVanish 2.2s ease-in-out 0.4s 1 both;
+}
