@@ -21,6 +21,8 @@ function AnalyzePageInner() {
   const searchParams = useSearchParams();
   const url = searchParams.get("url");
 
+  const sessionId = searchParams.get("session_id");
+
   const [step, setStep] = useState(0);
   const [apiError, setApiError] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -39,6 +41,16 @@ function AnalyzePageInner() {
     }
 
     (async () => {
+      // If arriving from Stripe success, verify the session directly so we
+      // don't race the webhook when checking subscription status.
+      if (sessionId) {
+        await fetch("/api/stripe/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+      }
+
       try {
         const r = await fetch("/api/analyze", {
           method: "POST",

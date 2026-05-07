@@ -330,9 +330,27 @@ export default function HomePage() {
                 ? "Welcome back — unlimited reports on your account"
                 : (profile?.free_runs_used ?? 0) < 1
                   ? "✓ 1 free report remaining on your account"
-                  : "You've used your free report — unlock full access below"
+                  : "You've used your free report"
               : "✓ First report free · Airbnb SEO analysis in minutes · No subscription"}
           </p>
+          {user && !profile?.is_subscribed && (profile?.free_runs_used ?? 0) >= 1 && (
+            <Link
+              href="/pricing"
+              style={{
+                display: "inline-block",
+                marginTop: "0.75rem",
+                padding: "0.55rem 1.25rem",
+                background: "#E63946",
+                color: "#fff",
+                borderRadius: 8,
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Unlock unlimited access — $6 →
+            </Link>
+          )}
         </div>
       </section>
 
