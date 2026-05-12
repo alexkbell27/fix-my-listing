@@ -17,6 +17,7 @@ export interface AnalysisResult {
   location: string;
   bedrooms: number;
   bathrooms: number;
+  highlights: string[];
   currentScore: number;
   projectedScore: number;
   revenueLift: number;
@@ -307,10 +308,11 @@ When you receive listing data + comp data:
 Return ONLY this exact JSON structure — no markdown, no preamble:
 
 {
-  "listingName": string,
-  "location": string,
+  "listingName": string,           // listing title as-is
+  "location": string,              // "City, State, Country" format
   "bedrooms": number,
   "bathrooms": number,
+  "highlights": string[],          // Airbnb highlights/tags from the listing (e.g. "Ocean View", "Quiet", "Central") — extract from the highlights, tags, or houseHighlights field in the listing data; empty array if none
   "currentScore": number,
   "projectedScore": number,
   "revenueLift": number,
@@ -471,6 +473,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Check run limits ──────────────────────────────────────────────────────
+  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
+
   let { data: profile } = await supabaseAdmin
     .from("profiles")
     .select("free_runs_used, is_subscribed")
@@ -478,11 +482,15 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (!profile) {
-    await supabaseAdmin.from("profiles").insert({ id: user.id, email: user.email });
-    profile = { free_runs_used: 0, is_subscribed: false };
+    await supabaseAdmin.from("profiles").insert({
+      id: user.id,
+      email: user.email,
+      is_subscribed: !paymentsEnabled,
+    });
+    profile = { free_runs_used: 0, is_subscribed: !paymentsEnabled };
   }
 
-  if (profile.free_runs_used >= 1 && !profile.is_subscribed) {
+  if (paymentsEnabled && profile.free_runs_used >= 20 && !profile.is_subscribed) {
     return NextResponse.json({ error: "UPGRADE_REQUIRED" }, { status: 402 });
   }
 
@@ -497,7 +505,7 @@ export async function POST(req: NextRequest) {
 
   // ── Schedule background work and return job ID immediately ────────────────
   const id = crypto.randomUUID();
-  const markFreeRun = profile.free_runs_used < 1 && !profile.is_subscribed;
+  const markFreeRun = paymentsEnabled && profile.free_runs_used < 20 && !profile.is_subscribed;
 
   after(async () => {
     try {

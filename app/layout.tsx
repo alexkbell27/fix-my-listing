@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import BetaBanner from "./components/BetaBanner";
 
 const sourceSans = Source_Sans_3({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" className={`${sourceSans.variable} ${sourceSerif.variable}`}>
       <body>
+        <BetaBanner />
         {children}
         <Toaster position="bottom-center" />
         <Analytics />

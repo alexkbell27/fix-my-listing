@@ -16,6 +16,7 @@ export interface ReportData {
   bedrooms: number;
   bathrooms: number;
   url?: string | null;
+  highlights?: string[];
   currentScore: number;
   projectedScore: number;
   revenueLift: number;
@@ -124,6 +125,7 @@ export function sanitize(raw: unknown): ReportData {
       bedrooms: 0,
       bathrooms: 0,
       url: (r.url as string) ?? null,
+      highlights: toArr<string>(r.highlights),
       currentScore: overall,
       projectedScore: Math.min(99, overall + 30),
       revenueLift: 0,
@@ -199,6 +201,7 @@ export function sanitize(raw: unknown): ReportData {
     bedrooms: Number(m.bedrooms ?? 0),
     bathrooms: Number(m.bathrooms ?? 0),
     url: (m.url as string) ?? null,
+    highlights: toArr<string>(m.highlights),
     currentScore: Number(m.currentScore ?? 0),
     projectedScore: Number(m.projectedScore ?? 0),
     revenueLift: Number(m.revenueLift ?? 0),
@@ -311,6 +314,7 @@ export const card: React.CSSProperties = {
   border: "0.5px solid var(--border)",
   borderRadius: "var(--radius)",
   padding: "1.75rem",
+  boxShadow: "0 2px 12px rgba(29,53,87,0.07)",
 };
 
 const label: React.CSSProperties = {
@@ -569,9 +573,36 @@ export function ResultsReport({
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "3rem 2rem 7rem" }}>
 
         {/* Header */}
-        {headerMeta && <p style={{ fontSize: "0.78rem", color: "var(--muted)", marginBottom: "0.3rem" }}>{headerMeta}</p>}
-        {data.url && <p style={{ fontSize: "0.78rem", color: "var(--muted)", marginBottom: "0.3rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{data.url}</p>}
-        <h1 style={{ fontSize: "1.35rem", fontWeight: 500, letterSpacing: "-0.02em", marginBottom: "2rem" }}>{data.listingName}</h1>
+        <div style={{ marginBottom: "2rem", paddingBottom: "1.5rem", borderBottom: "0.5px solid var(--border)" }}>
+          <h1 style={{ fontSize: "1.45rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "0.5rem", lineHeight: 1.3 }}>{data.listingName}</h1>
+
+          {headerMeta && (
+            <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: data.url ? "0.35rem" : (data.highlights?.length ? "0.75rem" : 0) }}>
+              {headerMeta}
+            </p>
+          )}
+
+          {data.url && (
+            <a
+              href={data.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: "block", fontSize: "0.75rem", color: "#457B9D", marginBottom: data.highlights?.length ? "0.75rem" : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none" }}
+            >
+              {data.url}
+            </a>
+          )}
+
+          {(data.highlights?.length ?? 0) > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+              {data.highlights!.map((h) => (
+                <span key={h} style={{ padding: "0.25rem 0.7rem", borderRadius: 999, fontSize: "0.72rem", fontWeight: 500, background: "rgba(168,218,220,0.18)", color: "#1D3557", border: "0.5px solid #A8DADC" }}>
+                  {h}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Score hero */}
         <div className="score-section report-section" style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.75rem", marginBottom: "0.75rem", alignItems: "stretch" }}>
@@ -690,7 +721,7 @@ export function ResultsReport({
                 </div>
               )}
               <div className="before-after-card" style={{ background: descView === "after" ? "#1D3557" : "#FFFFFF", border: "0.5px solid var(--color-border)", borderRadius: 10, padding: "1.25rem 1.5rem", transition: "background 0.25s ease" }}>
-                <p style={{ fontSize: "0.9rem", lineHeight: 1.75, color: descView === "after" ? "#F1FAEE" : "#457B9D", margin: 0 }}>
+                <p style={{ fontSize: "0.9rem", lineHeight: 1.75, color: descView === "after" ? "#FFFFFF" : "#457B9D", margin: 0 }}>
                   {descView === "before" && data.description.tabs[descTab]?.current ? data.description.tabs[descTab].current : data.description.tabs[descTab]?.optimized ?? ""}
                 </p>
               </div>

@@ -36,9 +36,9 @@ const TESTIMONIALS = [
 
 function ProfileIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <circle cx="9" cy="6.5" r="3" fill="#457B9D" />
-      <path d="M2 16c0-3.866 3.134-7 7-7s7 3.134 7 7" stroke="#457B9D" strokeWidth="1.5" strokeLinecap="round" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" fill="#457B9D" />
+      <path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8" fill="#457B9D" />
     </svg>
   );
 }
@@ -147,7 +147,7 @@ export default function HomePage() {
           /* ── Logged-in nav ── */
           <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
             <Link href="/dashboard" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>
-              My Reports →
+              My Reports
             </Link>
 
             {/* Profile icon + dropdown */}
@@ -197,7 +197,7 @@ export default function HomePage() {
                       textDecoration: "none",
                       borderRadius: 7,
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "#F1FAEE"; }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,0,0,0.04)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
                   >
                     Settings
@@ -217,7 +217,7 @@ export default function HomePage() {
                       fontFamily: "inherit",
                       borderRadius: 7,
                     }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F1FAEE"; }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.04)"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                   >
                     Sign out
@@ -288,7 +288,7 @@ export default function HomePage() {
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
             marginBottom: "0.85rem",
-            color: "#F1FAEE",
+            color: "#FFFFFF",
           }}>
             {user ? "Find out why you're not ranking" : (
               <>
@@ -426,21 +426,21 @@ export default function HomePage() {
           </section>
 
           {/* How it works */}
-          <section id="how-it-works" style={{ background: "var(--surface)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)", padding: "4.25rem 2rem" }}>
+          <section id="how-it-works" style={{ background: "#1D3557", padding: "4.25rem 2rem" }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
-              <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem", textAlign: "center" }}>How it works</h2>
-              <p style={{ color: "var(--muted)", textAlign: "center", marginBottom: "3rem", fontSize: "0.9rem" }}>From URL to action plan in minutes.</p>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem", textAlign: "center", color: "#FFFFFF" }}>How it works</h2>
+              <p style={{ color: "rgba(255,255,255,0.55)", textAlign: "center", marginBottom: "3rem", fontSize: "0.9rem" }}>From URL to action plan in minutes.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 {STEPS.map((s, i) => (
                   <div key={s.num} style={{ display: "flex", gap: "1.25rem", alignItems: "flex-start" }}>
-                    <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: "var(--radius)", border: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.72rem", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.03em" }}>
+                    <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: "var(--radius)", border: "0.5px solid rgba(168,218,220,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.72rem", fontWeight: 500, color: "#A8DADC", letterSpacing: "0.03em" }}>
                       {s.num}
                     </div>
                     <div>
-                      <h3 style={{ fontWeight: 500, fontSize: "0.95rem", marginBottom: "0.3rem" }}>{s.title}</h3>
-                      <p style={{ color: "var(--muted)", fontSize: "0.875rem", lineHeight: 1.6, margin: 0 }}>{s.body}</p>
+                      <h3 style={{ fontWeight: 500, fontSize: "0.95rem", marginBottom: "0.3rem", color: "#FFFFFF" }}>{s.title}</h3>
+                      <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.875rem", lineHeight: 1.6, margin: 0 }}>{s.body}</p>
                       {i < STEPS.length - 1 && (
-                        <div style={{ width: 1, height: 20, background: "var(--border)", marginTop: "1rem", marginLeft: 36 / 2 - 0.5 - 26 }} />
+                        <div style={{ width: 1, height: 20, background: "rgba(168,218,220,0.3)", marginTop: "1rem", marginLeft: 36 / 2 - 0.5 - 26 }} />
                       )}
                     </div>
                   </div>
@@ -452,60 +452,85 @@ export default function HomePage() {
           {/* Pricing */}
           <section id="pricing" style={{ background: "var(--surface)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)", padding: "4.25rem 2rem", textAlign: "center" }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
-              <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem" }}>Simple pricing</h2>
-              <p style={{ color: "var(--muted)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Your first report is on us. Pay once to run unlimited reports, forever.</p>
-              <div className="pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", textAlign: "left" }}>
+              {process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true" ? (
+                <>
+                  <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem" }}>Simple pricing</h2>
+                  <p style={{ color: "var(--muted)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Your first report is on us. Pay once to run unlimited reports, forever.</p>
+                  <div className="pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", textAlign: "left" }}>
 
-                {/* Free tier */}
-                <div style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column" }}>
-                  <p style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 500, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>FIRST REPORT</p>
-                  <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$0</p>
-                  <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>No credit card required</p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
-                    {[
-                      "Full ranking score (0–100)",
-                      "All 7 audit sections",
-                      "Keyword gap vs. competitors",
-                      "3 SEO-optimized title rewrites",
-                      "Ranked action plan",
-                      "PDF export",
-                    ].map((item) => (
-                      <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
-                        <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", border: "0.5px solid var(--border)", color: "var(--text)", fontWeight: 500, fontSize: "0.845rem", textDecoration: "none" }}>
-                    Get my free report →
-                  </Link>
-                </div>
+                    {/* Free tier */}
+                    <div style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column" }}>
+                      <p style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 500, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>FIRST REPORT</p>
+                      <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$0</p>
+                      <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>No credit card required</p>
+                      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
+                        {["Full ranking score (0–100)", "All 7 audit sections", "Keyword gap vs. competitors", "3 SEO-optimized title rewrites", "Ranked action plan", "PDF export"].map((item) => (
+                          <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
+                            <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
+                          </li>
+                        ))}
+                      </ul>
+                      <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", border: "0.5px solid var(--border)", color: "var(--text)", fontWeight: 500, fontSize: "0.845rem", textDecoration: "none" }}>
+                        Get my free report →
+                      </Link>
+                    </div>
 
-                {/* Paid tier */}
-                <div style={{ background: "var(--surface)", border: "0.5px solid var(--accent)", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column", position: "relative" }}>
-                  <div style={{ position: "absolute", top: -1, right: 18, background: "var(--accent)", color: "#fff", fontSize: "0.68rem", fontWeight: 500, padding: "0.2rem 0.55rem", borderRadius: "0 0 7px 7px", letterSpacing: "0.04em" }}>
-                    BEST VALUE
+                    {/* Paid tier */}
+                    <div style={{ background: "var(--surface)", border: "0.5px solid var(--accent)", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column", position: "relative" }}>
+                      <div style={{ position: "absolute", top: -1, right: 18, background: "var(--accent)", color: "#fff", fontSize: "0.68rem", fontWeight: 500, padding: "0.2rem 0.55rem", borderRadius: "0 0 7px 7px", letterSpacing: "0.04em" }}>
+                        BEST VALUE
+                      </div>
+                      <p style={{ fontSize: "0.7rem", color: "var(--accent)", fontWeight: 500, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>UNLIMITED ACCESS</p>
+                      <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$6</p>
+                      <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>One-time · Never pay again</p>
+                      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
+                        {["Everything in Free", "Unlimited reports on any listing", "Re-run anytime after updates", "Track ranking improvements over time"].map((item) => (
+                          <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
+                            <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
+                          </li>
+                        ))}
+                      </ul>
+                      <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", background: "#E63946", color: "#fff", fontWeight: 500, fontSize: "0.845rem", textDecoration: "none" }}>
+                        Unlock unlimited →
+                      </Link>
+                    </div>
+
                   </div>
-                  <p style={{ fontSize: "0.7rem", color: "var(--accent)", fontWeight: 500, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>UNLIMITED ACCESS</p>
-                  <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$6</p>
-                  <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>One-time · Never pay again</p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
-                    {[
-                      "Everything in Free",
-                      "Unlimited reports on any listing",
-                      "Re-run anytime after updates",
-                      "Track ranking improvements over time",
-                    ].map((item) => (
-                      <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
-                        <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", background: "#E63946", color: "#fff", fontWeight: 500, fontSize: "0.845rem", textDecoration: "none" }}>
-                    Unlock unlimited →
-                  </Link>
-                </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "inline-block", background: "rgba(230,57,70,0.08)", border: "0.5px solid rgba(230,57,70,0.25)", borderRadius: 999, padding: "0.3rem 0.9rem", fontSize: "0.72rem", fontWeight: 600, color: "#E63946", letterSpacing: "0.06em", marginBottom: "1rem" }}>
+                    BETA
+                  </div>
+                  <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem" }}>Free while we&apos;re in beta</h2>
+                  <p style={{ color: "var(--muted)", marginBottom: "2.5rem", fontSize: "0.9rem", maxWidth: 420, margin: "0 auto 2.5rem" }}>
+                    We&apos;re in early access — all features are free right now. No credit card, no catch.
+                  </p>
 
-              </div>
+                  <div style={{ maxWidth: 360, margin: "0 auto", background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "2rem", textAlign: "left" }}>
+                    <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.15rem", lineHeight: 1 }}>$0</p>
+                    <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.75rem" }}>Free during beta · No credit card required</p>
+                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+                      {[
+                        "Full ranking score (0–100)",
+                        "All 7 audit sections",
+                        "Keyword gap vs. competitors",
+                        "3 SEO-optimized title rewrites",
+                        "Ranked action plan",
+                        "PDF export",
+                        "Unlimited reports",
+                      ].map((item) => (
+                        <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
+                          <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.7rem 1rem", borderRadius: "var(--radius)", background: "#E63946", color: "#fff", fontWeight: 600, fontSize: "0.9rem", textDecoration: "none" }}>
+                      Get free access →
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 

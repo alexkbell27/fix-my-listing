@@ -3,7 +3,7 @@
 /* ── Brand palette ───────────────────────────────────────────────────────── */
 :root {
   --strawberry:   #E63946;
-  --honeydew:     #F1FAEE;
+  --honeydew:     #FFFFFF;
   --frosted-blue: #A8DADC;
   --steel-blue:   #457B9D;
   --deep-space:   #1D3557;
@@ -11,7 +11,7 @@
   /* Semantic */
   --color-primary:        #E63946;
   --color-primary-dark:   #C1121F;
-  --color-background:     #F1FAEE;
+  --color-background:     #FFFFFF;
   --color-surface:        #FFFFFF;
   --color-border:         #A8DADC;
   --color-border-light:   #D4ECED;
@@ -22,7 +22,7 @@
   --color-highlight:      #A8DADC;
 
   /* Legacy aliases — existing components use these */
-  --bg:      #F1FAEE;
+  --bg:      #FFFFFF;
   --surface: #FFFFFF;
   --border:  #A8DADC;
   --text:    #1D3557;
@@ -70,7 +70,7 @@ h2 { font-family: var(--font-serif, Georgia, serif); }
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #F1FAEE 25%, #E2F0F1 50%, #F1FAEE 75%);
+  background: linear-gradient(90deg, #F0F0F0 25%, #E4E4E4 50%, #F0F0F0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 6px;

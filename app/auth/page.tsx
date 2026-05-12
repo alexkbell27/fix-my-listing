@@ -20,7 +20,7 @@ function AuthForm() {
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
 
   const [tab, setTab] = useState<"signin" | "signup">(defaultTab);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
