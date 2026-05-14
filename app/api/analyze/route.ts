@@ -508,13 +508,13 @@ export async function POST(req: NextRequest) {
   // ── Ensure profile exists ─────────────────────────────────────────────────
   let { data: profile } = await supabaseAdmin
     .from("profiles")
-    .select("subscription_tier")
+    .select("subscription_tier, free_report_used")
     .eq("id", user.id)
     .single();
 
   if (!profile) {
     await supabaseAdmin.from("profiles").insert({ id: user.id, email: user.email });
-    profile = { subscription_tier: "free" };
+    profile = { subscription_tier: "free", free_report_used: false };
   }
 
   const tier = (profile.subscription_tier ?? "free") as "free" | "single" | "unlimited";
@@ -526,7 +526,7 @@ export async function POST(req: NextRequest) {
   let listingUrlHash: string | null = null;
 
   if (!paymentsEnabled || tier === "unlimited") {
-    // Beta mode or unlimited subscription — full access, no gating
+    // Unlimited subscription — full access, no gating
     isPartial = false;
   } else if (tier === "single") {
     if (!listingUrl) {
@@ -549,7 +549,12 @@ export async function POST(req: NextRequest) {
     incrementSingleRun = true;
     isPartial = false;
   } else {
-    // Free tier — allow but flag as partial
+    // Free tier — one partial report per account
+    if (profile.free_report_used) {
+      return NextResponse.json({ error: "Free report already used", code: "FREE_REPORT_USED" }, { status: 402 });
+    }
+    // Mark used immediately to prevent concurrent duplicate submissions
+    await supabaseAdmin.from("profiles").update({ free_report_used: true }).eq("id", user.id);
     isPartial = true;
   }
 

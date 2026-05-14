@@ -45,7 +45,7 @@ function ProfileIcon() {
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ subscription_tier: string } | null>(null);
+  const [profile, setProfile] = useState<{ subscription_tier: string; free_report_used: boolean } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [invisibleOpacity, setInvisibleOpacity] = useState(0);
   const [contactFields, setContactFields] = useState({ name: "", email: "", message: "" });
@@ -72,7 +72,7 @@ export default function HomePage() {
     if (!user) { setProfile(null); return; }
     supabase
       .from("profiles")
-      .select("subscription_tier")
+      .select("subscription_tier, free_report_used")
       .eq("id", user.id)
       .single()
       .then(({ data }) => setProfile(data ?? null));
@@ -319,33 +319,46 @@ export default function HomePage() {
             </>
           )}
 
-          {/* URL input — routes based on auth + credit state */}
-          <HeroForm onNavigate={handleFormNavigate} />
-
-          <p style={{ marginTop: "0.85rem", fontSize: "0.78rem", color: "rgba(168,218,220,0.8)" }}>
-            {user
-              ? profile?.subscription_tier === "unlimited"
-                ? "Welcome back — unlimited reports on your account"
-                : "✓ Free partial report · Upgrade for the full analysis"
-              : "✓ Free partial report · No credit card required"}
-          </p>
-          {user && profile?.subscription_tier !== "unlimited" && (
-            <Link
-              href="/pricing"
-              style={{
-                display: "inline-block",
-                marginTop: "0.75rem",
-                padding: "0.55rem 1.25rem",
-                background: "#E63946",
-                color: "#fff",
-                borderRadius: 8,
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                textDecoration: "none",
-              }}
-            >
-              Unlock full report — from $4 →
-            </Link>
+          {/* URL input — hidden once free report is used (non-unlimited) */}
+          {user && profile?.free_report_used && profile?.subscription_tier !== "unlimited" ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+              <p style={{ fontSize: "0.9rem", color: "#A8DADC", margin: 0 }}>
+                You&apos;ve used your free report.
+              </p>
+              <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
+                <Link
+                  href="/dashboard"
+                  style={{ padding: "0.6rem 1.25rem", borderRadius: 8, border: "1px solid rgba(168,218,220,0.5)", color: "#A8DADC", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}
+                >
+                  View my report →
+                </Link>
+                <Link
+                  href="/pricing"
+                  style={{ padding: "0.6rem 1.25rem", borderRadius: 8, background: "#E63946", color: "#fff", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}
+                >
+                  Unlock full report — from $4 →
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <HeroForm onNavigate={handleFormNavigate} />
+              <p style={{ marginTop: "0.85rem", fontSize: "0.78rem", color: "rgba(168,218,220,0.8)" }}>
+                {user
+                  ? profile?.subscription_tier === "unlimited"
+                    ? "Welcome back — unlimited reports on your account"
+                    : "✓ Free partial report · Upgrade for the full analysis"
+                  : "✓ Free partial report · No credit card required"}
+              </p>
+              {user && profile?.subscription_tier !== "unlimited" && (
+                <Link
+                  href="/pricing"
+                  style={{ display: "inline-block", marginTop: "0.75rem", padding: "0.55rem 1.25rem", background: "#E63946", color: "#fff", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600, textDecoration: "none" }}
+                >
+                  Unlock full report — from $4 →
+                </Link>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -448,8 +461,7 @@ export default function HomePage() {
           {/* Pricing */}
           <section id="pricing" style={{ background: "var(--surface)", borderTop: "0.5px solid var(--border)", borderBottom: "0.5px solid var(--border)", padding: "4.25rem 2rem", textAlign: "center" }}>
             <div style={{ maxWidth: 680, margin: "0 auto" }}>
-              {process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true" ? (
-                <>
+              <>
                   <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem" }}>Simple pricing</h2>
                   <p style={{ color: "var(--muted)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Pay once for a single listing, or go unlimited for $9/month.</p>
                   <div className="pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", textAlign: "left" }}>
@@ -493,40 +505,6 @@ export default function HomePage() {
 
                   </div>
                 </>
-              ) : (
-                <>
-                  <div style={{ display: "inline-block", background: "rgba(230,57,70,0.08)", border: "0.5px solid rgba(230,57,70,0.25)", borderRadius: 999, padding: "0.3rem 0.9rem", fontSize: "0.72rem", fontWeight: 600, color: "#E63946", letterSpacing: "0.06em", marginBottom: "1rem" }}>
-                    BETA
-                  </div>
-                  <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem" }}>Free while we&apos;re in beta</h2>
-                  <p style={{ color: "var(--muted)", marginBottom: "2.5rem", fontSize: "0.9rem", maxWidth: 420, margin: "0 auto 2.5rem" }}>
-                    We&apos;re in early access — all features are free right now. No credit card, no catch.
-                  </p>
-
-                  <div style={{ maxWidth: 360, margin: "0 auto", background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "2rem", textAlign: "left" }}>
-                    <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.15rem", lineHeight: 1 }}>$0</p>
-                    <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.75rem" }}>Free during beta · No credit card required</p>
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.55rem" }}>
-                      {[
-                        "Full ranking score (0–100)",
-                        "All 7 audit sections",
-                        "Keyword gap vs. competitors",
-                        "3 SEO-optimized title rewrites",
-                        "Ranked action plan",
-                        "PDF export",
-                        "Unlimited reports",
-                      ].map((item) => (
-                        <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
-                          <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
-                        </li>
-                      ))}
-                    </ul>
-                    <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.7rem 1rem", borderRadius: "var(--radius)", background: "#E63946", color: "#fff", fontWeight: 600, fontSize: "0.9rem", textDecoration: "none" }}>
-                      Get free access →
-                    </Link>
-                  </div>
-                </>
-              )}
             </div>
           </section>
 

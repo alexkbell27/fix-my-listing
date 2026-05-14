@@ -756,6 +756,30 @@ export function ResultsReport({
           )}
         </div>
 
+        {/* Top action item teaser — partial access only */}
+        {access === "partial" && data.actionPlan.length > 0 && (
+          <div className="report-section" style={{ ...card, marginBottom: "0.75rem", borderColor: "rgba(230,57,70,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.85rem" }}>
+              <span style={{ fontSize: "0.68rem", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.08em" }}>TOP FIX</span>
+              <h2 style={{ fontSize: "1.15rem", fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>Your #1 Ranking Blocker</h2>
+            </div>
+            <div style={{ background: "#FFFFFF", border: "0.5px solid rgba(230,57,70,0.25)", borderRadius: 8, padding: "0.85rem 1rem", display: "flex", alignItems: "center", gap: "0.85rem" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#E63946", flexShrink: 0 }} />
+              <span style={{ fontSize: "0.9rem", fontWeight: 500, flex: 1 }}>{data.actionPlan[0].action}</span>
+              <span style={{ fontSize: "0.72rem", color: "var(--muted)", flexShrink: 0 }}>{data.actionPlan[0].effort}</span>
+            </div>
+            {data.actionPlan.length > 1 && (
+              <p style={{ fontSize: "0.82rem", color: "var(--muted)", marginTop: "0.75rem", marginBottom: 0 }}>
+                + {data.actionPlan.length - 1} more fixes in the full report
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Sections 02–07: blurred + paywall for partial access ── */}
+        <div style={{ position: "relative" }}>
+          <div style={{ filter: access === "partial" ? "blur(4px)" : "none", pointerEvents: access === "partial" ? "none" : "auto", userSelect: access === "partial" ? "none" : "auto", transition: "filter 0.2s" }}>
+
         {/* 02 Description */}
         <div className="report-section" style={{ ...card, marginBottom: "0.75rem" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
@@ -799,10 +823,6 @@ export function ResultsReport({
             </>
           )}
         </div>
-
-        {/* ── Sections 03–07: blurred + paywall for partial access ── */}
-        <div style={{ position: "relative" }}>
-          <div style={{ filter: access === "partial" ? "blur(4px)" : "none", pointerEvents: access === "partial" ? "none" : "auto", userSelect: access === "partial" ? "none" : "auto", transition: "filter 0.2s" }}>
 
         {/* 03 SEO & Search Ranking */}
         <div className="report-section" style={{ ...card, marginBottom: "0.75rem" }}>
