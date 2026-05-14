@@ -543,23 +543,23 @@ export default function HomePage() {
           {/* Two columns: BEFORE (left) | AFTER (right). Each row = one listing. */}
           <div className="lp-ba-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", columnGap: "1rem", rowGap: "3rem", alignItems: "center" }}>
             <BeforeAfterCard
-              card={{ position: "Page 4 in search", score: 43, photoSrc: "/before1.png", title: "Cozy place in San Diego · Private room", tags: ["Weak title", "No keywords", "56% occupancy"], insight: "Title missing high-volume airport search term. Description 40% shorter than top-ranked competitors. No mention of beach gear despite being highlight of reviews." }}
+              card={{ position: "Page 4 in search", score: 43, photoSrc: "/before1.png", title: "Kailua Kona Listing Before Fix My Listing", tags: ["Weak title", "No keywords", "56% occupancy"], insight: "Title missing high-volume airport search term. Description 40% shorter than top-ranked competitors. No mention of beach gear despite being highlight of reviews." }}
               variant="before"
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/arrow.png" alt="" className="lp-ba-arrow" style={{ width: 80, display: "block" }} />
             <BeforeAfterCard
-              card={{ position: "Page 1, position 3", score: 74, photoSrc: "/after1.png", title: "4-min walk to beach · Bright private room · Parking + fast WiFi · San Diego", tags: ["SEO title", "Keywords added", "84% occupancy"], insight: "Jumped from page 4 to page 1, position 3 on key search terms. Occupancy doubled month-over-month with zero price change." }}
+              card={{ position: "Page 1, position 3", score: 74, photoSrc: "/after1.png", title: "Revised SEO-Optimized Version", tags: ["SEO title", "Keywords added", "84% occupancy"], insight: "Jumped from page 4 to page 1, position 3 on key search terms. Occupancy doubled month-over-month with zero price change." }}
               variant="after"
             />
             <BeforeAfterCard
-              card={{ position: "Page 3 in search", score: 38, photoSrc: "/before2.png", title: "Modern apartment downtown Austin", tags: ["Generic title", "Missing amenities", "Competitor gap"], insight: "No mention of beach proximity despite being 4 min walk. 12 competitor listings ranking for &apos;parking&apos;, and &apos;fast WiFi&apos;. Brightness a concern in reviews." }}
+              card={{ position: "Page 3 in search", score: 38, photoSrc: "/before2.png", title: "San Diego Listing Before Fix My Listing", tags: ["Generic title", "Missing amenities", "Competitor gap"], insight: "No mention of beach proximity despite being 4 min walk. 12 competitor listings ranking for &apos;parking&apos;, and &apos;fast WiFi&apos;. Brightness a concern in reviews." }}
               variant="before"
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/arrow.png" alt="" className="lp-ba-arrow" style={{ width: 80, display: "block" }} />
             <BeforeAfterCard
-              card={{ position: "Top 3 ranked", score: 78, photoSrc: "/after2.png", title: "Walk to 6th St · Modern 1BR · Fast WiFi · Rooftop Access · Austin TX", tags: ["Local keywords", "Full amenities", "Top-3 ranked"], insight: "Average 5 extra monthly bookings since. Revenue up ~$2400/mo." }}
+              card={{ position: "Top 3 ranked", score: 78, photoSrc: "/after2.png", title: "Revised SEO-Optimized Version", tags: ["Local keywords", "Full amenities", "Top-3 ranked"], insight: "Average 5 extra monthly bookings since. Revenue up ~$2400/mo." }}
               variant="after"
             />
           </div>
