@@ -20,6 +20,7 @@ function AuthForm() {
   const defaultTab = searchParams.get("tab") === "signup" ? "signup" : "signin";
 
   const [tab, setTab] = useState<"signin" | "signup">(defaultTab);
+  const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
@@ -48,7 +49,7 @@ function AuthForm() {
         if (err) { setAuthError(err.message); return; }
         router.push(next);
       } else {
-        const { data, error: err } = await supabase.auth.signUp({ email, password });
+        const { data, error: err } = await supabase.auth.signUp({ email, password, options: { data: { first_name: firstName.trim() || null } } });
         if (err) { setAuthError(err.message); return; }
         if (data.session) {
           router.push(next);
@@ -110,7 +111,7 @@ function AuthForm() {
           {(["signin", "signup"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => { setTab(t); setAuthError(""); setNotice(""); setEmailTouched(false); setPasswordTouched(false); }}
+              onClick={() => { setTab(t); setAuthError(""); setNotice(""); setEmailTouched(false); setPasswordTouched(false); setFirstName(""); }}
               style={{ flex: 1, padding: "0.6rem", border: "none", background: "none", fontSize: "0.875rem", fontWeight: tab === t ? 600 : 400, color: tab === t ? "var(--color-text-primary)" : "var(--color-text-secondary)", cursor: "pointer", borderBottom: tab === t ? "2px solid #E63946" : "2px solid transparent", fontFamily: "inherit", transition: "color 0.15s" }}
             >
               {t === "signin" ? "Sign in" : "Create account"}
@@ -125,6 +126,15 @@ function AuthForm() {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {tab === "signup" && (
+            <input
+              type="text"
+              placeholder="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              style={inputStyle(false)}
+            />
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
             <input
               type="email"

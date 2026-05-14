@@ -87,6 +87,20 @@ h2 { font-family: var(--font-serif, Georgia, serif); }
   .nav-links { display: none !important; }
 }
 
+/* ── Signed-in home page ─────────────────────────────────────────────────── */
+.li-dark-input::placeholder { color: rgba(255,255,255,0.4); }
+.li-hero-flex  { display: flex; gap: 3rem; align-items: center; }
+.li-stat-cards { display: flex; gap: 0.75rem; flex-shrink: 0; }
+
+@media (max-width: 860px) {
+  .li-hero-flex  { flex-direction: column !important; }
+  .li-stat-cards { width: 100%; justify-content: stretch; }
+  .li-stat-cards > * { flex: 1; }
+}
+@media (max-width: 480px) {
+  .li-stat-cards { flex-direction: column !important; }
+}
+
 /* ── Landing page responsive grids ──────────────────────────────────────── */
 @keyframes lp-pulse {
   0%, 100% { opacity: 1; }

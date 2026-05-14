@@ -44,6 +44,7 @@ const TESTIMONIALS = [
 
 interface BACard {
   position: string;
+  score: number;
   photoSrc?: string;
   title: string;
   tags: string[];
@@ -62,11 +63,15 @@ function BeforeAfterCard({ card, variant }: { card: BACard; variant: "before" | 
   return (
     <div style={{ background: "#FFFFFF", border: "0.5px solid #E5E7EB", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
       {/* Header bar */}
-      <div style={{ background: headerBg, borderBottom: `0.5px solid ${headerBorder}`, padding: "0.55rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "0.65rem", fontWeight: 700, color: accentColor, letterSpacing: "0.09em" }}>
+      <div style={{ background: headerBg, borderBottom: `0.5px solid ${headerBorder}`, padding: "0.55rem 1rem", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "0.65rem", fontWeight: 700, color: accentColor, letterSpacing: "0.09em", whiteSpace: "nowrap" }}>
           {isBefore ? "BEFORE" : "AFTER"}
         </span>
-        <span style={{ fontSize: "0.72rem", color: accentColor, fontWeight: 500 }}>{card.position}</span>
+        <span style={{ fontSize: "0.65rem", color: accentColor, fontWeight: 400 }}>—</span>
+        <span style={{ fontSize: "0.65rem", color: accentColor, fontWeight: 500, flex: 1 }}>{card.position}</span>
+        <span style={{ fontSize: "0.63rem", fontWeight: 600, color: accentColor, background: isBefore ? "rgba(230,59,46,0.12)" : "rgba(22,163,74,0.12)", border: `0.5px solid ${headerBorder}`, borderRadius: 999, padding: "0.1rem 0.5rem", whiteSpace: "nowrap" }}>
+          Score {card.score}
+        </span>
       </div>
 
       {/* Photo */}
@@ -114,12 +119,93 @@ function ProfileIcon() {
   );
 }
 
+type ReportSummary = { id: string; listing_url: string | null; created_at: string; score: number; listingName: string };
+
+// ─── Signed-in helpers ───────────────────────────────────────────────────────
+
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function ScoreRing({ score }: { score: number }) {
+  const r = 22;
+  const circ = 2 * Math.PI * r;
+  const fill = (score / 100) * circ;
+  const color = score >= 70 ? "#16A34A" : score >= 50 ? "#F59E0B" : RED;
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" style={{ flexShrink: 0 }}>
+      <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="5" />
+      <circle cx="28" cy="28" r={r} fill="none" stroke={color} strokeWidth="5"
+        strokeDasharray={`${fill} ${circ - fill}`}
+        strokeLinecap="round"
+        transform="rotate(-90 28 28)" />
+      <text x="28" y="33" textAnchor="middle" fontSize="12" fontWeight="600" fill={color}>{score}</text>
+    </svg>
+  );
+}
+
+function NavyUrlForm({ onNavigate }: { onNavigate: (url: string) => void }) {
+  const [value, setValue] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const url = value.trim();
+    if (!url.includes("airbnb.com")) {
+      setError("Please enter a valid Airbnb listing URL");
+      return;
+    }
+    onNavigate(url);
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
+        <input
+          type="url"
+          className="li-dark-input"
+          placeholder="Paste your Airbnb listing URL…"
+          value={value}
+          onChange={(e) => { setValue(e.target.value); setError(""); }}
+          style={{
+            flex: 1,
+            height: 46,
+            padding: "0 1rem",
+            borderRadius: 10,
+            border: `1px solid ${error ? "#E63946" : "rgba(168,218,220,0.3)"}`,
+            background: "rgba(255,255,255,0.08)",
+            color: "#FFFFFF",
+            fontSize: "0.9rem",
+            outline: "none",
+            fontFamily: "inherit",
+          }}
+        />
+        <button
+          type="submit"
+          style={{ height: 46, padding: "0 1.25rem", borderRadius: 10, background: RED, color: "#FFFFFF", fontWeight: 600, fontSize: "0.875rem", border: "none", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+        >
+          Analyze →
+        </button>
+      </form>
+      {error && <p style={{ margin: "0.35rem 0 0", fontSize: "0.75rem", color: "#FCA5A5" }}>{error}</p>}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ subscription_tier: string; free_report_used: boolean } | null>(null);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [profile, setProfile] = useState<{ subscription_tier: string; free_report_used: boolean; first_name: string | null } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [recentReports, setRecentReports] = useState<ReportSummary[]>([]);
+  const [userStats, setUserStats] = useState<{ total: number; distinct: number; avgScore: number } | null>(null);
   const [contactFields, setContactFields] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -139,10 +225,22 @@ export default function HomePage() {
     if (!user) { setProfile(null); return; }
     supabase
       .from("profiles")
-      .select("subscription_tier, free_report_used")
+      .select("subscription_tier, free_report_used, first_name")
       .eq("id", user.id)
       .single()
       .then(({ data }) => setProfile(data ?? null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) { setRecentReports([]); setUserStats(null); return; }
+    fetch("/api/user/stats")
+      .then((r) => r.json())
+      .then((data) => {
+        setRecentReports(data.recentReports ?? []);
+        setUserStats({ total: data.totalReports ?? 0, distinct: data.distinctListings ?? 0, avgScore: data.avgScore ?? 0 });
+      })
+      .catch(console.error);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -186,6 +284,11 @@ export default function HomePage() {
       router.push(`/analyze?url=${encoded}`);
     }
   }, [user, router]);
+
+  // While auth is resolving, render a blank white page to avoid flashing logged-out content
+  if (user === undefined) {
+    return <div style={{ background: "#FFFFFF", minHeight: "100vh" }} />;
+  }
 
   // ── Shared nav ──────────────────────────────────────────────────────────────
   const nav = (
@@ -238,49 +341,131 @@ export default function HomePage() {
 
   // ── Logged-in view ──────────────────────────────────────────────────────────
   if (user) {
+    const firstName = profile?.first_name ?? (user.user_metadata?.first_name as string | undefined) ?? null;
+    const isUnlimited = profile?.subscription_tier === "unlimited";
+    const canRunReport = isUnlimited || !profile?.free_report_used;
+
     return (
       <div style={{ background: "#FFFFFF", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         {nav}
-        <section style={{ background: NAVY, padding: "5rem 2rem", textAlign: "center", flex: 1 }}>
-          <div style={{ maxWidth: 560, margin: "0 auto" }}>
-            <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: "clamp(1.8rem, 4vw, 2.6rem)", fontWeight: 400, color: "#FFFFFF", lineHeight: 1.2, marginBottom: "1rem" }}>
-              Find out why you&apos;re not ranking
-            </h1>
-            <p style={{ fontSize: "1rem", color: "rgba(168,218,220,0.85)", marginBottom: "1.75rem" }}>
-              Paste your listing URL to run a full Airbnb SEO analysis
-            </p>
 
-            {profile?.free_report_used && profile?.subscription_tier !== "unlimited" ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-                <p style={{ fontSize: "0.9rem", color: "rgba(168,218,220,0.8)", margin: 0 }}>You&apos;ve used your free report.</p>
-                <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
-                  <Link href="/dashboard" style={{ padding: "0.6rem 1.25rem", borderRadius: 8, border: "1px solid rgba(168,218,220,0.5)", color: "#A8DADC", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
-                    View my report →
-                  </Link>
-                  <Link href="/pricing" style={{ padding: "0.6rem 1.25rem", borderRadius: 8, background: RED, color: "#fff", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
-                    Unlock full report — from $4 →
-                  </Link>
+        {/* Navy hero */}
+        <section style={{ background: NAVY, padding: "3rem 2rem" }}>
+          <div style={{ maxWidth: 860, margin: "0 auto", display: "flex", gap: "3rem", alignItems: "center" }}>
+
+            {/* Left: all text + form */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: "0.68rem", fontWeight: 600, color: "rgba(168,218,220,0.75)", letterSpacing: "0.12em", marginBottom: "0.5rem" }}>
+                {firstName ? `WELCOME BACK, ${firstName.toUpperCase()}` : "WELCOME BACK"}
+              </p>
+              <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: "clamp(1.6rem, 3vw, 2.2rem)", fontWeight: 400, color: "#FFFFFF", lineHeight: 1.2, marginBottom: "0.5rem" }}>
+                Analyze another listing
+              </h1>
+              <p style={{ fontSize: "0.9rem", color: "rgba(168,218,220,0.7)", marginBottom: "0.85rem" }}>
+                Paste your Airbnb URL for a full ranking analysis and prioritized action plan.
+              </p>
+
+              {canRunReport ? (
+                <>
+                  <NavyUrlForm onNavigate={handleFormNavigate} />
+                  <p style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "rgba(168,218,220,0.5)" }}>
+                    {isUnlimited ? "Unlimited reports on your account" : "✓ Free partial report · Upgrade for the full analysis"}
+                  </p>
+                </>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <p style={{ fontSize: "0.9rem", color: "rgba(168,218,220,0.8)", margin: 0 }}>You&apos;ve used your free report.</p>
+                  <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+                    <Link href="/dashboard" style={{ padding: "0.6rem 1.25rem", borderRadius: 8, border: "1px solid rgba(168,218,220,0.5)", color: "#A8DADC", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
+                      View my report →
+                    </Link>
+                    <Link href="/pricing" style={{ padding: "0.6rem 1.25rem", borderRadius: 8, background: RED, color: "#fff", fontSize: "0.875rem", fontWeight: 600, textDecoration: "none" }}>
+                      Unlock full report →
+                    </Link>
+                  </div>
                 </div>
+              )}
+            </div>
+
+            {/* Right: stat boxes, centered against all left content */}
+            {canRunReport && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flexShrink: 0 }}>
+                {[
+                  { label: "Total reports",    value: userStats ? String(userStats.total)    : "—" },
+                  { label: "Listings tracked", value: userStats ? String(userStats.distinct) : "—" },
+                  { label: "Avg. score",       value: userStats ? String(userStats.avgScore) : "—" },
+                ].map((stat) => (
+                  <div key={stat.label} style={{ background: "rgba(255,255,255,0.07)", border: "0.5px solid rgba(168,218,220,0.18)", borderRadius: 10, padding: "0.6rem 1rem", display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 160 }}>
+                    <div style={{ fontSize: "1.4rem", fontWeight: 600, color: "#FFFFFF", letterSpacing: "-0.04em", lineHeight: 1 }}>{stat.value}</div>
+                    <div style={{ fontSize: "0.72rem", color: "rgba(168,218,220,0.65)" }}>{stat.label}</div>
+                  </div>
+                ))}
               </div>
-            ) : (
-              <>
-                <HeroForm onNavigate={handleFormNavigate} buttonLabel="Analyze listing →" />
-                <p style={{ marginTop: "0.85rem", fontSize: "0.78rem", color: "rgba(168,218,220,0.7)" }}>
-                  {profile?.subscription_tier === "unlimited"
-                    ? "Unlimited reports on your account"
-                    : "✓ Free partial report · Upgrade for the full analysis"}
-                </p>
-                {profile?.subscription_tier !== "unlimited" && (
-                  <Link href="/pricing" style={{ display: "inline-block", marginTop: "0.75rem", padding: "0.55rem 1.25rem", background: RED, color: "#fff", borderRadius: 8, fontSize: "0.85rem", fontWeight: 600, textDecoration: "none" }}>
-                    Unlock full report — from $4 →
-                  </Link>
-                )}
-              </>
             )}
+
           </div>
         </section>
 
-        {/* Support */}
+        {/* White body */}
+        <section style={{ flex: 1, padding: "2.5rem 2rem" }}>
+          <div style={{ maxWidth: 960, margin: "0 auto" }}>
+
+            {/* Upsell strip */}
+            {!isUnlimited && (
+              <div style={{ background: "rgba(230,59,46,0.05)", border: "0.5px solid rgba(230,59,46,0.18)", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: "2rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
+                <p style={{ fontSize: "0.875rem", color: NAVY, margin: 0 }}>
+                  Get the full report — keyword gap analysis, review sentiment, PDF export, and 3 reruns.
+                </p>
+                <Link href="/pricing" style={{ padding: "0.5rem 1rem", borderRadius: 8, background: RED, color: "#FFFFFF", fontWeight: 600, fontSize: "0.82rem", textDecoration: "none", whiteSpace: "nowrap" }}>
+                  Upgrade — from $4 →
+                </Link>
+              </div>
+            )}
+
+            {/* Recent reports */}
+            <h2 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: "1.1rem", fontWeight: 400, color: NAVY, marginBottom: "1.25rem" }}>
+              Recent reports
+            </h2>
+
+            {recentReports.length === 0 ? (
+              <div style={{ background: "#FAFAF8", border: "0.5px solid #E5E7EB", borderRadius: 12, padding: "2rem", textAlign: "center" }}>
+                <p style={{ fontSize: "0.875rem", color: "#7BA3BF", margin: 0 }}>No reports yet. Analyze your first listing above.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {recentReports.map((r) => (
+                  <div key={r.id} style={{ background: "#FFFFFF", border: "0.5px solid #E5E7EB", borderRadius: 12, padding: "1rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                    <ScoreRing score={r.score} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: "0.875rem", fontWeight: 600, color: NAVY, margin: "0 0 0.2rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {r.listingName || r.listing_url || "Untitled listing"}
+                      </p>
+                      <p style={{ fontSize: "0.72rem", color: "#7BA3BF", margin: 0 }}>
+                        {r.listing_url && (
+                          <span style={{ fontFamily: "monospace" }}>
+                            {r.listing_url.replace(/^https?:\/\//, "").slice(0, 44)}{r.listing_url.replace(/^https?:\/\//, "").length > 44 ? "…" : ""}
+                          </span>
+                        )}
+                        {r.listing_url && r.created_at ? " · " : ""}
+                        {r.created_at ? relativeTime(r.created_at) : ""}
+                      </p>
+                    </div>
+                    <Link href={`/results/${r.id}`} style={{ padding: "0.45rem 1rem", borderRadius: 8, border: "0.5px solid #D1D5DB", color: NAVY, fontWeight: 600, fontSize: "0.8rem", textDecoration: "none", whiteSpace: "nowrap" }}>
+                      View →
+                    </Link>
+                  </div>
+                ))}
+                {userStats && userStats.total > 3 && (
+                  <Link href="/dashboard" style={{ display: "block", textAlign: "center", fontSize: "0.82rem", color: "#457B9D", textDecoration: "none", padding: "0.5rem" }}>
+                    View all {userStats.total} reports →
+                  </Link>
+                )}
+              </div>
+            )}
+
+          </div>
+        </section>
+
         <SupportSection contactFields={contactFields} setContactFields={setContactFields} contactStatus={contactStatus} handleContact={handleContact} />
         <PageFooter />
       </div>
@@ -409,22 +594,22 @@ export default function HomePage() {
             {/* Left column — all BEFORE cards */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <BeforeAfterCard
-                card={{ position: "Page 4 in search", title: "Cozy place in San Diego · Private room", tags: ["Weak title", "No keywords", "56% occupancy"], insight: "Title missing 6 high-volume search terms. Description 40% shorter than top-ranked competitors. No mention of beach proximity despite being 4 min walk." }}
+                card={{ position: "Page 4 in search", score: 43, title: "Cozy place in San Diego · Private room", tags: ["Weak title", "No keywords", "56% occupancy"], insight: "Title missing 6 high-volume search terms. Description 40% shorter than top-ranked competitors. No mention of beach proximity despite being 4 min walk." }}
                 variant="before"
               />
               <BeforeAfterCard
-                card={{ position: "Page 3 in search", title: "Modern apartment downtown Austin", tags: ["Generic title", "Missing amenities", "Competitor gap"], insight: "12 competitor listings ranking for '6th Street,' 'live music,' and 'walkable' — none mentioned in listing." }}
+                card={{ position: "Page 3 in search", score: 38, title: "Modern apartment downtown Austin", tags: ["Generic title", "Missing amenities", "Competitor gap"], insight: "12 competitor listings ranking for '6th Street,' 'live music,' and 'walkable' — none mentioned in listing." }}
                 variant="before"
               />
             </div>
             {/* Right column — all AFTER cards */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <BeforeAfterCard
-                card={{ position: "Page 1, position 3", title: "4-min walk to beach · Bright private room · Parking + fast WiFi · San Diego", tags: ["SEO title", "Keywords added", "84% occupancy"], insight: "Jumped from page 4 to page 1, position 3. Occupancy 56%→84%. Revenue up $340/mo with zero price change." }}
+                card={{ position: "Page 1, position 3", score: 74, title: "4-min walk to beach · Bright private room · Parking + fast WiFi · San Diego", tags: ["SEO title", "Keywords added", "84% occupancy"], insight: "Jumped from page 4 to page 1, position 3. Occupancy 56%→84%. Revenue up $340/mo with zero price change." }}
                 variant="after"
               />
               <BeforeAfterCard
-                card={{ position: "Top 3 ranked", title: "Walk to 6th St · Modern 1BR · Fast WiFi · Rooftop Access · Austin TX", tags: ["Local keywords", "Full amenities", "Top-3 ranked"], insight: "Occupancy 61%→84%. Revenue up $410/mo." }}
+                card={{ position: "Top 3 ranked", score: 78, title: "Walk to 6th St · Modern 1BR · Fast WiFi · Rooftop Access · Austin TX", tags: ["Local keywords", "Full amenities", "Top-3 ranked"], insight: "Occupancy 61%→84%. Revenue up $410/mo." }}
                 variant="after"
               />
             </div>

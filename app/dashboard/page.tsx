@@ -3,23 +3,35 @@ import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServer, supabaseAdmin } from "@/lib/supabase-server";
 
-function scoreMeta(score: number) {
-  if (score >= 75) return { bg: "rgba(168,218,220,0.3)", color: "#1D3557", border: "#A8DADC", label: "Good" };
-  if (score >= 50) return { bg: "rgba(69,123,157,0.15)", color: "#457B9D", border: "#457B9D", label: "Fair" };
-  return { bg: "rgba(230,57,70,0.12)", color: "#E63946", border: "#E63946", label: "Poor" };
+const NAVY = "#1D3557";
+const RED  = "#E63946";
+
+function ScoreRing({ score }: { score: number }) {
+  const r    = 22;
+  const circ = 2 * Math.PI * r;
+  const fill = (score / 100) * circ;
+  const color = score >= 70 ? "#16A34A" : score >= 50 ? "#F59E0B" : RED;
+  return (
+    <svg width="52" height="52" viewBox="0 0 56 56" style={{ flexShrink: 0 }}>
+      <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="5" />
+      <circle cx="28" cy="28" r={r} fill="none" stroke={color} strokeWidth="5"
+        strokeDasharray={`${fill} ${circ - fill}`}
+        strokeLinecap="round"
+        transform="rotate(-90 28 28)" />
+      <text x="28" y="33" textAnchor="middle" fontSize="12" fontWeight="600" fill={color}>
+        {score || "—"}
+      </text>
+    </svg>
+  );
 }
 
 function relativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return "Today at " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase();
-  }
+  const date   = new Date(dateString);
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffDays === 0) return "Today at " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase();
   if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 7)  return `${diffDays} days ago`;
   if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
     return weeks === 1 ? "1 week ago" : `${weeks} weeks ago`;
@@ -39,7 +51,6 @@ function normalizeUrl(url: string): string {
 export default async function DashboardPage() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect("/auth");
 
   const [reportsResult, profileResult] = await Promise.all([
@@ -58,7 +69,6 @@ export default async function DashboardPage() {
   const reports = reportsResult.data ?? [];
   const tier = (profileResult.data?.subscription_tier ?? "free") as "free" | "single" | "unlimited";
 
-  // For single-tier users, build a map of listing_url_hash → purchase info
   let purchasedMap = new Map<string, { runs_used: number; max_runs: number }>();
   if (tier === "single") {
     const { data: purchases } = await supabaseAdmin
@@ -78,141 +88,107 @@ export default async function DashboardPage() {
     return "partial";
   }
 
-  const pillStyle = (bg: string, color: string, border: string): React.CSSProperties => ({
-    display: "inline-flex",
-    alignItems: "center",
-    padding: "0.2rem 0.6rem",
-    borderRadius: 999,
-    fontSize: "0.73rem",
-    fontWeight: 500,
-    background: bg,
-    color,
-    border: `0.5px solid ${border}`,
-    whiteSpace: "nowrap",
-  });
-
   return (
-    <div style={{ background: "var(--color-background)", minHeight: "100vh", color: "var(--color-text-primary)" }}>
+    <div style={{ background: "#FFFFFF", minHeight: "100vh" }}>
 
       {/* Nav */}
-      <nav style={{ background: "#FFFFFF", borderBottom: "0.5px solid var(--color-border)", padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-          <Image src="/logo-full.png" alt="Fix My Listing" height={30} width={150} style={{ height: 30, width: "auto" }} />
+      <nav style={{ background: "#FFFFFF", borderBottom: "0.5px solid #E5E7EB", padding: "0 2rem", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <Image src="/logo-full.png" alt="Fix My Listing" height={28} width={140} style={{ height: 28, width: "auto", display: "block" }} />
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <Link href="/" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>New Report</Link>
-        </div>
+        <Link href="/" style={{ fontSize: "0.875rem", fontWeight: 600, color: NAVY, textDecoration: "none" }}>
+          + New analysis
+        </Link>
       </nav>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "3rem 2rem" }}>
-        <h1 style={{ fontSize: "1.35rem", fontWeight: 500, letterSpacing: "-0.02em", marginBottom: "0.35rem" }}>
-          My reports
-        </h1>
-        <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginBottom: "2.5rem" }}>
-          {user.email}
-        </p>
+      {/* Navy header */}
+      <section style={{ background: NAVY, padding: "2.5rem 2rem" }}>
+        <div style={{ maxWidth: 860, margin: "0 auto" }}>
+          <p style={{ fontSize: "0.68rem", fontWeight: 600, color: "rgba(168,218,220,0.75)", letterSpacing: "0.12em", marginBottom: "0.5rem" }}>
+            MY REPORTS
+          </p>
+          <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: "clamp(1.5rem, 3vw, 2rem)", fontWeight: 400, color: "#FFFFFF", lineHeight: 1.2, marginBottom: "0.35rem" }}>
+            Your listing analyses
+          </h1>
+          <p style={{ fontSize: "0.82rem", color: "rgba(168,218,220,0.55)", margin: 0 }}>{user.email}</p>
+        </div>
+      </section>
 
+      {/* Body */}
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "2.5rem 2rem" }}>
         {reports.length === 0 ? (
-          <div style={{ background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "4rem 2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-            <div style={{ width: 80, height: 80, background: "#A8DADC", borderRadius: 12, flexShrink: 0 }} />
-            <h2 style={{ fontSize: "1.1rem", fontWeight: 500, margin: 0, color: "var(--text)" }}>
-              No reports yet
-            </h2>
-            <p style={{ color: "var(--muted)", fontSize: "0.875rem", maxWidth: 380, lineHeight: 1.6, margin: 0 }}>
-              Paste your Airbnb listing URL on the home page to get your first free SEO report — it&apos;s free.
+          <div style={{ background: "#FAFAF8", border: "0.5px solid #E5E7EB", borderRadius: 14, padding: "4rem 2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+            <p style={{ fontSize: "1rem", fontWeight: 600, color: NAVY, margin: 0 }}>No reports yet</p>
+            <p style={{ color: "#7BA3BF", fontSize: "0.875rem", maxWidth: 380, lineHeight: 1.6, margin: 0 }}>
+              Paste your Airbnb listing URL on the home page to get your first free SEO report.
             </p>
-            <Link
-              href="/"
-              style={{ display: "inline-block", padding: "0.65rem 1.5rem", background: "#E63946", color: "#fff", borderRadius: "var(--radius)", fontWeight: 600, fontSize: "0.875rem", textDecoration: "none", marginTop: "0.5rem" }}
-            >
+            <Link href="/" style={{ display: "inline-block", padding: "0.65rem 1.5rem", background: RED, color: "#fff", borderRadius: 10, fontWeight: 600, fontSize: "0.875rem", textDecoration: "none", marginTop: "0.5rem" }}>
               Analyze my listing →
             </Link>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {reports.map((report) => {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const result = report.result as any;
-              const score: number = result?.overallScore ?? result?.currentScore ?? 0;
-              const meta = scoreMeta(score);
-              const timeAgo = relativeTime(report.created_at);
-              const listingName: string = result?.listingName || "";
-              const displayUrl = report.listing_url
-                ? report.listing_url.replace(/https?:\/\/(www\.)?/, "").slice(0, 70)
+              const result      = report.result as any;
+              const score       = (result?.overallScore ?? result?.currentScore ?? 0) as number;
+              const listingName = (result?.listingName ?? "") as string;
+              const displayUrl  = report.listing_url
+                ? report.listing_url.replace(/^https?:\/\/(www\.)?/, "").slice(0, 60)
                 : "Manual analysis";
-
-              const access = getAccessForReport(report.listing_url);
+              const timeAgo  = relativeTime(report.created_at);
+              const access   = getAccessForReport(report.listing_url);
               const purchase = tier === "single" && report.listing_url
                 ? purchasedMap.get(normalizeUrl(report.listing_url))
                 : undefined;
 
               return (
-                <div
-                  key={report.id}
-                  style={{ background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}
-                >
+                <div key={report.id} style={{ background: "#FFFFFF", border: "0.5px solid #E5E7EB", borderRadius: 12, padding: "1rem 1.25rem", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                  <ScoreRing score={score} />
+
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: "0 0 0.2rem", fontSize: "0.875rem", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: "0.875rem", fontWeight: 600, color: NAVY, margin: "0 0 0.2rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {listingName || displayUrl}
                     </p>
-                    <p style={{ margin: "0 0 0.15rem", fontSize: "0.78rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {listingName ? displayUrl : timeAgo}
+                    <p style={{ fontSize: "0.72rem", color: "#7BA3BF", margin: 0 }}>
+                      {listingName && (
+                        <span style={{ fontFamily: "monospace" }}>{displayUrl}{" · "}</span>
+                      )}
+                      {timeAgo}
                     </p>
-                    {listingName && (
-                      <p style={{ margin: "0 0 0.15rem", fontSize: "0.75rem", color: "var(--muted)" }}>{timeAgo}</p>
-                    )}
                     {purchase && (
-                      <p style={{ margin: 0, fontSize: "0.73rem", color: "var(--muted)" }}>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.72rem", color: "#7BA3BF" }}>
                         {purchase.runs_used} of {purchase.max_runs} reruns used
                       </p>
                     )}
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0, flexWrap: "wrap" }}>
-                    {/* Access pill */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", flexShrink: 0 }}>
                     {access === "full" ? (
-                      <span style={pillStyle("rgba(34,197,94,0.1)", "#166534", "rgba(34,197,94,0.3)")}>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "#166534", background: "rgba(34,197,94,0.1)", border: "0.5px solid rgba(34,197,94,0.3)", borderRadius: 999, padding: "0.2rem 0.6rem", whiteSpace: "nowrap" }}>
                         Full report
                       </span>
                     ) : (
-                      <span style={pillStyle("rgba(0,0,0,0.04)", "var(--muted)", "var(--border)")}>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 500, color: "#7BA3BF", background: "rgba(0,0,0,0.03)", border: "0.5px solid #E5E7EB", borderRadius: 999, padding: "0.2rem 0.6rem", whiteSpace: "nowrap" }}>
                         Free preview
                       </span>
                     )}
-
-                    {/* Score pill */}
-                    {score > 0 && (
-                      <span style={pillStyle(meta.bg, meta.color, meta.border)}>
-                        {score}/100 · {meta.label}
-                      </span>
-                    )}
-
-                    {/* CTA */}
-                    {access === "partial" ? (
-                      <Link
-                        href={`/results/${report.id}`}
-                        style={{ fontSize: "0.82rem", color: "#E63946", textDecoration: "none", fontWeight: 600, flexShrink: 0 }}
-                      >
-                        Unlock →
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/results/${report.id}`}
-                        style={{ fontSize: "0.82rem", color: "var(--accent)", textDecoration: "none", fontWeight: 500, flexShrink: 0 }}
-                      >
-                        View report →
-                      </Link>
-                    )}
+                    <Link
+                      href={`/results/${report.id}`}
+                      style={{ padding: "0.45rem 1rem", borderRadius: 8, border: access === "partial" ? "none" : "0.5px solid #D1D5DB", background: access === "partial" ? RED : "transparent", color: access === "partial" ? "#FFFFFF" : NAVY, fontWeight: 600, fontSize: "0.8rem", textDecoration: "none", whiteSpace: "nowrap" }}
+                    >
+                      {access === "partial" ? "Unlock →" : "View →"}
+                    </Link>
                   </div>
                 </div>
               );
             })}
-            <Link
-              href="/"
-              style={{ display: "block", textAlign: "center", padding: "0.75rem", background: "var(--accent)", color: "#fff", borderRadius: "var(--radius)", fontWeight: 500, fontSize: "0.875rem", textDecoration: "none", marginTop: "0.5rem" }}
-            >
-              New Report →
-            </Link>
+
+            <div style={{ marginTop: "1rem", textAlign: "center" }}>
+              <Link href="/" style={{ display: "inline-block", padding: "0.65rem 1.75rem", background: NAVY, color: "#fff", borderRadius: 10, fontWeight: 600, fontSize: "0.875rem", textDecoration: "none" }}>
+                Analyze another listing →
+              </Link>
+            </div>
           </div>
         )}
       </div>

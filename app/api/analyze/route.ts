@@ -607,7 +607,9 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (!profile) {
-    await supabaseAdmin.from("profiles").insert({ id: user.id, email: user.email });
+    const meta = user.user_metadata ?? {};
+    const firstName = (meta.first_name as string | null) ?? ((meta.full_name as string | undefined)?.split(" ")[0] ?? null);
+    await supabaseAdmin.from("profiles").insert({ id: user.id, email: user.email, first_name: firstName });
     profile = { subscription_tier: "free", free_report_used: false };
   }
 
