@@ -80,6 +80,16 @@ export interface ReportData {
   };
   actionPlan: Array<{ action: string; effort: string; impact: "high" | "medium" | "low" }>;
   topPriorities: string[];
+  reviews: {
+    totalCount: number;
+    sentimentScore: number;
+    velocityNote: string;
+    hostResponseQuality: "excellent" | "good" | "poor" | "none";
+    praisedThemes: Array<{ theme: string; frequency: number; exampleQuote: string }>;
+    complaintThemes: Array<{ theme: string; frequency: number; exampleQuote: string }>;
+    hiddenInsights: Array<{ insight: string; suggestedAddition: string }>;
+    redFlags: Array<{ issue: string; severity: "critical" | "warning"; suggestedFix: string }>;
+  } | null;
 }
 
 // ─── Sanitize ─────────────────────────────────────────────────────────────────
@@ -189,6 +199,7 @@ export function sanitize(raw: unknown): ReportData {
       },
       actionPlan: top.map((a) => ({ action: a, effort: "~5 min", impact: "high" as const })),
       topPriorities: top,
+      reviews: null,
     };
   }
 
@@ -304,6 +315,24 @@ export function sanitize(raw: unknown): ReportData {
       impact: (item?.impact ?? "medium") as "high" | "medium" | "low",
     })),
     topPriorities: toArr<string>(m.topPriorities ?? []),
+    reviews: m.reviews == null ? null : {
+      totalCount: Number(m.reviews.totalCount ?? 0),
+      sentimentScore: Number(m.reviews.sentimentScore ?? 0),
+      velocityNote: String(m.reviews.velocityNote ?? ""),
+      hostResponseQuality: (m.reviews.hostResponseQuality ?? "none") as "excellent" | "good" | "poor" | "none",
+      praisedThemes: toArr(m.reviews.praisedThemes).map((t: any) => ({
+        theme: String(t?.theme ?? ""), frequency: Number(t?.frequency ?? 0), exampleQuote: String(t?.exampleQuote ?? ""),
+      })),
+      complaintThemes: toArr(m.reviews.complaintThemes).map((t: any) => ({
+        theme: String(t?.theme ?? ""), frequency: Number(t?.frequency ?? 0), exampleQuote: String(t?.exampleQuote ?? ""),
+      })),
+      hiddenInsights: toArr(m.reviews.hiddenInsights).map((ins: any) => ({
+        insight: String(ins?.insight ?? ""), suggestedAddition: String(ins?.suggestedAddition ?? ""),
+      })),
+      redFlags: toArr(m.reviews.redFlags).map((f: any) => ({
+        issue: String(f?.issue ?? ""), severity: (f?.severity ?? "warning") as "critical" | "warning", suggestedFix: String(f?.suggestedFix ?? ""),
+      })),
+    },
   };
 }
 
@@ -775,6 +804,168 @@ export function ResultsReport({
             )}
           </div>
         )}
+
+        {/* ── Reviews section — custom partial handling ── */}
+        {data.reviews === null ? (
+          <div className="report-section" style={{ ...card, marginBottom: "0.75rem" }}>
+            <p style={{ fontSize: "0.82rem", color: "var(--muted)", fontStyle: "italic", margin: 0 }}>
+              Review analysis unavailable for this listing — this can happen if the listing has fewer than 3 reviews or if review data is temporarily unavailable.
+            </p>
+          </div>
+        ) : data.reviews ? (
+          <div className="report-section" style={{ ...card, marginBottom: "0.75rem" }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+              <h2 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontStyle: "italic", fontSize: "1.2rem", fontWeight: 400, margin: 0, letterSpacing: "-0.01em" }}>
+                What guests are really saying
+              </h2>
+              <span style={{ fontSize: "0.72rem", fontWeight: 500, color: "var(--muted)", background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: 999, padding: "0.2rem 0.65rem" }}>
+                {data.reviews.totalCount} reviews analyzed
+              </span>
+            </div>
+
+            {/* Sentiment bar */}
+            {(() => {
+              const s = data.reviews!.sentimentScore;
+              const barColor = s >= 76 ? "#A8DADC" : s >= 50 ? "#457B9D" : "#E63946";
+              return (
+                <div style={{ marginBottom: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.4rem" }}>
+                    <span style={{ fontSize: "0.78rem", color: "var(--muted)", flexShrink: 0 }}>Overall sentiment</span>
+                    <div style={{ flex: 1, height: 8, background: "var(--color-border)", borderRadius: 999, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${s}%`, background: barColor, borderRadius: 999, transition: "width 0.6s ease" }} />
+                    </div>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 600, color: barColor, flexShrink: 0 }}>{s}/100</span>
+                  </div>
+                  <p style={{ fontSize: "0.75rem", color: "var(--muted)", fontStyle: "italic", margin: 0 }}>{data.reviews!.velocityNote}</p>
+                </div>
+              );
+            })()}
+
+            {/* Red flags — shown above columns if any exist (full access only) */}
+            {access === "full" && (data.reviews?.redFlags?.length ?? 0) > 0 && (
+              <div style={{ background: "rgba(230,57,70,0.06)", border: "0.5px solid rgba(230,57,70,0.3)", borderRadius: 10, padding: "1rem 1.25rem", marginBottom: "1.25rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                  <span style={{ color: "#E63946", fontSize: "1rem" }}>⚠</span>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#E63946", letterSpacing: "0.06em" }}>NEEDS IMMEDIATE ATTENTION</span>
+                </div>
+                {data.reviews!.redFlags.map((flag, i) => (
+                  <div key={i} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", marginBottom: i < data.reviews!.redFlags.length - 1 ? "0.75rem" : 0 }}>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 600, padding: "0.15rem 0.5rem", borderRadius: 999, background: flag.severity === "critical" ? "rgba(230,57,70,0.15)" : "rgba(69,123,157,0.12)", color: flag.severity === "critical" ? "#E63946" : "#457B9D", flexShrink: 0, marginTop: "0.1rem" }}>
+                      {flag.severity.toUpperCase()}
+                    </span>
+                    <div>
+                      <p style={{ fontSize: "0.875rem", fontWeight: 500, margin: "0 0 0.2rem", color: "var(--text)" }}>{flag.issue}</p>
+                      <p style={{ fontSize: "0.8rem", color: "var(--muted)", margin: 0 }}>{flag.suggestedFix}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Two columns — praised vs complaints */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.25rem" }}>
+              {/* Praised */}
+              <div>
+                <p style={{ fontSize: "0.72rem", fontWeight: 600, color: "#3B6D11", letterSpacing: "0.07em", marginBottom: "0.65rem" }}>✓ WHAT GUESTS LOVE</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {(access === "partial" ? data.reviews!.praisedThemes.slice(0, 1) : data.reviews!.praisedThemes).map((t, i) => (
+                    <div key={i} style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderLeft: "3px solid #A8DADC", borderRadius: 8, padding: "0.75rem 1rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                        <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{t.theme}</span>
+                        <span style={{ fontSize: "0.68rem", fontWeight: 500, color: "#1D3557", background: "rgba(168,218,220,0.3)", border: "0.5px solid #A8DADC", borderRadius: 999, padding: "0.1rem 0.45rem", flexShrink: 0 }}>
+                          {t.frequency}×
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.8rem", color: "#457B9D", fontStyle: "italic", margin: 0, lineHeight: 1.5 }}>&ldquo;{t.exampleQuote}&rdquo;</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Complaints */}
+              <div>
+                <p style={{ fontSize: "0.72rem", fontWeight: 600, color: "#E63946", letterSpacing: "0.07em", marginBottom: "0.65rem" }}>✗ WHAT GUESTS FLAG</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {(access === "partial" ? data.reviews!.complaintThemes.slice(0, 1) : data.reviews!.complaintThemes).map((t, i) => (
+                    <div key={i} style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderLeft: "3px solid #E63946", borderRadius: 8, padding: "0.75rem 1rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                        <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{t.theme}</span>
+                        <span style={{ fontSize: "0.68rem", fontWeight: 500, color: "#E63946", background: "rgba(230,57,70,0.1)", border: "0.5px solid rgba(230,57,70,0.35)", borderRadius: 999, padding: "0.1rem 0.45rem", flexShrink: 0 }}>
+                          {t.frequency}×
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.8rem", color: "#457B9D", fontStyle: "italic", margin: 0, lineHeight: 1.5 }}>&ldquo;{t.exampleQuote}&rdquo;</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Partial upgrade nudge */}
+            {access === "partial" && (
+              <p style={{ fontSize: "0.82rem", color: "#457B9D", marginBottom: "1.25rem", margin: "0 0 1.25rem" }}>
+                See all {(data.reviews?.praisedThemes?.length ?? 0) + (data.reviews?.complaintThemes?.length ?? 0) + (data.reviews?.hiddenInsights?.length ?? 0)} insights —{" "}
+                <a href="#paywall" style={{ color: "#457B9D", fontWeight: 600, textDecoration: "underline", cursor: "pointer" }}
+                  onClick={(e) => { e.preventDefault(); document.querySelector("[data-paywall]")?.scrollIntoView({ behavior: "smooth" }); }}>
+                  unlock full report
+                </a>
+              </p>
+            )}
+
+            {/* Hidden insights — full access only */}
+            {access === "full" && (data.reviews?.hiddenInsights?.length ?? 0) > 0 && (
+              <div style={{ marginBottom: "1.25rem" }}>
+                <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text)", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
+                  What your reviews reveal that your listing doesn&apos;t mention
+                </p>
+                <p style={{ fontSize: "0.78rem", color: "var(--muted)", fontStyle: "italic", marginBottom: "0.75rem" }}>
+                  These are untapped selling points guests care about — add them to your description.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {data.reviews!.hiddenInsights.map((ins, i) => (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "3fr 2fr", borderRadius: 10, overflow: "hidden", border: "0.5px solid var(--border)" }}>
+                      <div style={{ background: "#F1FAEE", padding: "1rem 1.25rem", display: "flex", alignItems: "center" }}>
+                        <p style={{ fontSize: "0.875rem", color: "#1D3557", margin: 0, lineHeight: 1.55 }}>{ins.insight}</p>
+                      </div>
+                      <div style={{ background: "#1D3557", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
+                          <span style={{ color: "#A8DADC", fontSize: "1rem", flexShrink: 0 }}>→</span>
+                          <p style={{ fontSize: "0.8rem", color: "#F1FAEE", margin: 0, lineHeight: 1.55 }}>{ins.suggestedAddition}</p>
+                        </div>
+                        <CopyBtn text={ins.suggestedAddition} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Host response quality */}
+            {access === "full" && (() => {
+              const q = data.reviews!.hostResponseQuality;
+              const cfg = {
+                excellent: { bg: "rgba(168,218,220,0.3)", color: "#1D3557", label: "Excellent" },
+                good: { bg: "#F1FAEE", color: "#457B9D", label: "Good" },
+                poor: { bg: "rgba(230,57,70,0.1)", color: "#E63946", label: "Poor" },
+                none: { bg: "rgba(230,57,70,0.1)", color: "#E63946", label: "None" },
+              }[q];
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>Host response quality:</span>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 600, padding: "0.2rem 0.65rem", borderRadius: 999, background: cfg.bg, color: cfg.color }}>
+                    {cfg.label}
+                  </span>
+                  {(q === "poor" || q === "none") && (
+                    <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontStyle: "italic" }}>
+                      Responding to reviews improves your Airbnb search ranking
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        ) : null}
 
         {/* ── Sections 02–07: blurred + paywall for partial access ── */}
         <div style={{ position: "relative" }}>

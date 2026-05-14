@@ -76,6 +76,16 @@ export interface AnalysisResult {
     impact: "high" | "medium" | "low";
     estimatedRevenueImpact: string;
   }[];
+  reviews: {
+    totalCount: number;
+    sentimentScore: number;
+    velocityNote: string;
+    hostResponseQuality: "excellent" | "good" | "poor" | "none";
+    praisedThemes: { theme: string; frequency: number; exampleQuote: string }[];
+    complaintThemes: { theme: string; frequency: number; exampleQuote: string }[];
+    hiddenInsights: { insight: string; suggestedAddition: string }[];
+    redFlags: { issue: string; severity: "critical" | "warning"; suggestedFix: string }[];
+  } | null;
 }
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
@@ -158,6 +168,20 @@ async function scrapeComps(city: string, bedrooms: number, checkIn: string, chec
     );
   } catch (err) {
     console.warn("[analyze] comp scrape failed — continuing without comps:", err);
+    return [];
+  }
+}
+
+async function scrapeReviews(listingUrl: string): Promise<unknown[]> {
+  try {
+    const reviews = await apifyPost(
+      "tri_angle~airbnb-reviews-scraper",
+      { startUrls: [{ url: listingUrl }], maxReviews: 50 },
+      60
+    );
+    return reviews;
+  } catch (e) {
+    console.warn("[analyze] review scrape failed — continuing without reviews:", e);
     return [];
   }
 }
@@ -256,6 +280,38 @@ Universal high-impact amenities often missing from listings:
 - Coffee setup beyond basic (Nespresso, bean grinder, pour-over) — mentioned in 5-star reviews constantly
 - Blackout curtains — underrated, guests love them, rarely mentioned
 - Extra towels/linens explicitly called out — reduces a common guest anxiety
+
+---
+
+REVIEW ANALYSIS:
+You will receive up to 50 guest reviews as a JSON array. Each review has a \`comments\` field with the review text and a \`createdAt\` date. Analyze them thoroughly and extract:
+
+1. TOTAL COUNT — how many reviews were provided
+
+2. REVIEW VELOCITY — look at the dates. Are reviews recent (last 3 months) or has the listing gone quiet? A listing with 50 reviews but the last one 6+ months ago is algorithmically penalized by Airbnb. Note this explicitly.
+
+3. SENTIMENT SCORE (0-100) — overall positivity across all reviews. Weight recent reviews more heavily than old ones.
+
+4. PRAISED THEMES — what do guests consistently love? Find 3-5 recurring themes. For each:
+   - Theme name (2-4 words)
+   - How many reviews mention it (frequency)
+   - A short representative quote from an actual review (under 15 words, paraphrased not copied)
+
+5. COMPLAINT THEMES — what do guests flag as negative or could be improved? Find 3-5 recurring themes. Same format. Include minor complaints.
+
+6. HIDDEN INSIGHTS — what do reviews reveal that the listing description doesn't mention? Things guests care about that the host is failing to promote. Find 3-5. For each:
+   - What guests are saying (the insight)
+   - Exactly what the host should add to their listing description to capture this
+
+7. HOST RESPONSE QUALITY — does the host respond to reviews?
+   - "excellent": responds to most reviews with personalized messages
+   - "good": responds to some reviews
+   - "poor": rarely responds
+   - "none": no responses at all
+
+8. RED FLAGS — any reviews that mention something actively hurting bookings? Noise issues, cleanliness concerns, misleading photos, safety concerns. Flag these specifically.
+
+If no reviews are provided or the array is empty, return null for the entire reviews object.
 
 ---
 
@@ -369,7 +425,17 @@ Return ONLY this exact JSON structure — no markdown, no preamble:
   },
   "actionPlan": [
     { "action": string, "effort": "5 min" | "1 hour" | "one-time", "impact": "high" | "medium" | "low", "estimatedRevenueImpact": string }
-  ]
+  ],
+  "reviews": {
+    "totalCount": number,
+    "sentimentScore": number,
+    "velocityNote": string,
+    "hostResponseQuality": "excellent" | "good" | "poor" | "none",
+    "praisedThemes": [{ "theme": string, "frequency": number, "exampleQuote": string }],
+    "complaintThemes": [{ "theme": string, "frequency": number, "exampleQuote": string }],
+    "hiddenInsights": [{ "insight": string, "suggestedAddition": string }],
+    "redFlags": [{ "issue": string, "severity": "critical" | "warning", "suggestedFix": string }]
+  } | null
 }`;
 
 // ─── URL normalisation ────────────────────────────────────────────────────────
@@ -409,11 +475,15 @@ async function runAnalysis(opts: {
 
     const compCheckIn = toDateStr(addMonths(new Date(), 3));
     const compCheckOut = toDateStr(addDays(addMonths(new Date(), 3), 2));
-    const comps = city ? await scrapeComps(city, bedrooms, compCheckIn, compCheckOut) : [];
+    const [comps, reviews] = await Promise.all([
+      city ? scrapeComps(city, bedrooms, compCheckIn, compCheckOut) : Promise.resolve([]),
+      scrapeReviews(listingUrl),
+    ]);
 
     listingContext = [
       `Individual listing data (structured JSON):\n\n${JSON.stringify(listingData, null, 2)}`,
       `Comp listings — ${comps.length} nearby listings with similar bedroom count in "${city || "same area"}":\n\n${JSON.stringify(comps, null, 2)}`,
+      `Guest reviews — ${reviews.length} reviews scraped:\n\n${JSON.stringify(reviews, null, 2)}`,
     ].join("\n\n---\n\n");
   }
 
@@ -426,7 +496,7 @@ async function runAnalysis(opts: {
 
   const message = await anthropic.messages.create({
     model: "claude-opus-4-7",
-    max_tokens: 8192,
+    max_tokens: 16000,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userMessage }],
   });
