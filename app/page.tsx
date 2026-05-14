@@ -45,7 +45,7 @@ function ProfileIcon() {
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ free_runs_used: number; is_subscribed: boolean } | null>(null);
+  const [profile, setProfile] = useState<{ subscription_tier: string } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [invisibleOpacity, setInvisibleOpacity] = useState(0);
   const [contactFields, setContactFields] = useState({ name: "", email: "", message: "" });
@@ -72,7 +72,7 @@ export default function HomePage() {
     if (!user) { setProfile(null); return; }
     supabase
       .from("profiles")
-      .select("free_runs_used, is_subscribed")
+      .select("subscription_tier")
       .eq("id", user.id)
       .single()
       .then(({ data }) => setProfile(data ?? null));
@@ -116,10 +116,8 @@ export default function HomePage() {
     const encoded = encodeURIComponent(url);
     if (!user) {
       router.push(`/preview?url=${encoded}`);
-    } else if (profile?.is_subscribed || (profile?.free_runs_used ?? 0) < 1) {
-      router.push(`/analyze?url=${encoded}`);
     } else {
-      router.push(`/pricing?url=${encoded}`);
+      router.push(`/analyze?url=${encoded}`);
     }
   }, [user, profile, router]);
 
@@ -326,14 +324,12 @@ export default function HomePage() {
 
           <p style={{ marginTop: "0.85rem", fontSize: "0.78rem", color: "rgba(168,218,220,0.8)" }}>
             {user
-              ? profile?.is_subscribed
+              ? profile?.subscription_tier === "unlimited"
                 ? "Welcome back — unlimited reports on your account"
-                : (profile?.free_runs_used ?? 0) < 1
-                  ? "✓ 1 free report remaining on your account"
-                  : "You've used your free report"
-              : "✓ First report free · Airbnb SEO analysis in minutes · No subscription"}
+                : "✓ Free partial report · Upgrade for the full analysis"
+              : "✓ Free partial report · No credit card required"}
           </p>
-          {user && !profile?.is_subscribed && (profile?.free_runs_used ?? 0) >= 1 && (
+          {user && profile?.subscription_tier !== "unlimited" && (
             <Link
               href="/pricing"
               style={{
@@ -348,7 +344,7 @@ export default function HomePage() {
                 textDecoration: "none",
               }}
             >
-              Unlock unlimited access — $6 →
+              Unlock full report — from $4 →
             </Link>
           )}
         </div>
@@ -455,43 +451,43 @@ export default function HomePage() {
               {process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true" ? (
                 <>
                   <h2 style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.025em", marginBottom: "0.6rem" }}>Simple pricing</h2>
-                  <p style={{ color: "var(--muted)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Your first report is on us. Pay once to run unlimited reports, forever.</p>
+                  <p style={{ color: "var(--muted)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Pay once for a single listing, or go unlimited for $9/month.</p>
                   <div className="pricing-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", textAlign: "left" }}>
 
-                    {/* Free tier */}
-                    <div style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column" }}>
-                      <p style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 500, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>FIRST REPORT</p>
-                      <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$0</p>
-                      <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>No credit card required</p>
+                    {/* Single tier — $4 */}
+                    <div style={{ background: "#FFFFFF", border: "1px solid #A8DADC", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column" }}>
+                      <p style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 600, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>SINGLE LISTING</p>
+                      <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$4</p>
+                      <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>one-time</p>
                       <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
-                        {["Full ranking score (0–100)", "All 7 audit sections", "Keyword gap vs. competitors", "3 SEO-optimized title rewrites", "Ranked action plan", "PDF export"].map((item) => (
+                        {["Full report for 1 listing", "3 reruns on the same listing", "Title & description rewrites", "SEO keyword analysis", "Review sentiment analysis", "Pricing benchmarks", "PDF export"].map((item) => (
                           <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
-                            <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
+                            <span style={{ color: "#E63946", flexShrink: 0 }}>✓</span> {item}
                           </li>
                         ))}
                       </ul>
-                      <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", border: "0.5px solid var(--border)", color: "var(--text)", fontWeight: 500, fontSize: "0.845rem", textDecoration: "none" }}>
-                        Get my free report →
+                      <Link href="/pricing" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", border: "1.5px solid #E63946", color: "#E63946", fontWeight: 600, fontSize: "0.845rem", textDecoration: "none" }}>
+                        Get full report — $4 →
                       </Link>
                     </div>
 
-                    {/* Paid tier */}
-                    <div style={{ background: "var(--surface)", border: "0.5px solid var(--accent)", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column", position: "relative" }}>
-                      <div style={{ position: "absolute", top: -1, right: 18, background: "var(--accent)", color: "#fff", fontSize: "0.68rem", fontWeight: 500, padding: "0.2rem 0.55rem", borderRadius: "0 0 7px 7px", letterSpacing: "0.04em" }}>
-                        BEST VALUE
+                    {/* Unlimited tier — $9/mo */}
+                    <div style={{ background: "#FFFFFF", border: "2px solid #457B9D", borderRadius: "var(--radius)", padding: "1.75rem", display: "flex", flexDirection: "column", position: "relative" }}>
+                      <div style={{ position: "absolute", top: -1, right: 18, background: "#457B9D", color: "#fff", fontSize: "0.65rem", fontWeight: 600, padding: "0.2rem 0.55rem", borderRadius: "0 0 7px 7px", letterSpacing: "0.05em" }}>
+                        MOST POPULAR
                       </div>
-                      <p style={{ fontSize: "0.7rem", color: "var(--accent)", fontWeight: 500, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>UNLIMITED ACCESS</p>
-                      <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$6</p>
-                      <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>One-time · Never pay again</p>
+                      <p style={{ fontSize: "0.7rem", color: "#457B9D", fontWeight: 600, marginBottom: "0.85rem", letterSpacing: "0.07em" }}>UNLIMITED</p>
+                      <p style={{ fontSize: "2.1rem", fontWeight: 500, letterSpacing: "-0.03em", marginBottom: "0.2rem", lineHeight: 1 }}>$9</p>
+                      <p style={{ color: "var(--muted)", fontSize: "0.82rem", marginBottom: "1.5rem" }}>/month · cancel anytime</p>
                       <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", flex: 1 }}>
-                        {["Everything in Free", "Unlimited reports on any listing", "Re-run anytime after updates", "Track ranking improvements over time"].map((item) => (
-                          <li key={item} style={{ fontSize: "0.845rem", color: "var(--muted)", display: "flex", gap: "0.5rem" }}>
-                            <span style={{ color: "var(--accent)", flexShrink: 0 }}>✓</span> {item}
+                        {["Everything in Single, plus:", "Unlimited listings", "Unlimited reruns", "Competitor benchmarking", "All future features", "Priority support"].map((item, i) => (
+                          <li key={item} style={{ fontSize: "0.845rem", color: i === 0 ? "var(--text)" : "var(--muted)", display: "flex", gap: "0.5rem", fontWeight: i === 0 ? 500 : 400 }}>
+                            {i > 0 && <span style={{ color: "#E63946", flexShrink: 0 }}>✓</span>} {item}
                           </li>
                         ))}
                       </ul>
-                      <Link href="/auth" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", background: "#E63946", color: "#fff", fontWeight: 500, fontSize: "0.845rem", textDecoration: "none" }}>
-                        Unlock unlimited →
+                      <Link href="/pricing" style={{ display: "block", textAlign: "center", padding: "0.65rem 1rem", borderRadius: "var(--radius)", background: "#E63946", color: "#fff", fontWeight: 600, fontSize: "0.845rem", textDecoration: "none" }}>
+                        Get unlimited access — $9/mo →
                       </Link>
                     </div>
 

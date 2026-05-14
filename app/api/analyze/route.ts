@@ -372,6 +372,17 @@ Return ONLY this exact JSON structure — no markdown, no preamble:
   ]
 }`;
 
+// ─── URL normalisation ────────────────────────────────────────────────────────
+
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return (u.hostname + u.pathname).toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+}
+
 // ─── Background analysis ──────────────────────────────────────────────────────
 
 async function runAnalysis(opts: {
@@ -381,9 +392,10 @@ async function runAnalysis(opts: {
   listingUrl: string | null;
   manualTitle: string | undefined;
   manualDescription: string | undefined;
-  markFreeRun: boolean;
+  incrementSingleRun: boolean;
+  listingUrlHash: string | null;
 }) {
-  const { id, userId, userEmail, listingUrl, manualTitle, manualDescription, markFreeRun } = opts;
+  const { id, userId, userEmail, listingUrl, manualTitle, manualDescription, incrementSingleRun, listingUrlHash } = opts;
 
   let listingContext = "";
 
@@ -445,8 +457,20 @@ async function runAnalysis(opts: {
     result,
   });
 
-  if (markFreeRun) {
-    await supabaseAdmin.from("profiles").update({ free_runs_used: 1 }).eq("id", userId);
+  if (incrementSingleRun && listingUrlHash) {
+    const { data: pr } = await supabaseAdmin
+      .from("purchased_reports")
+      .select("runs_used")
+      .eq("user_id", userId)
+      .eq("listing_url_hash", listingUrlHash)
+      .single();
+    if (pr) {
+      await supabaseAdmin
+        .from("purchased_reports")
+        .update({ runs_used: pr.runs_used + 1 })
+        .eq("user_id", userId)
+        .eq("listing_url_hash", listingUrlHash);
+    }
   }
 
   console.log(`[analyze] job ${id} complete for user ${userEmail}`);
@@ -472,28 +496,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
-  // ── Check run limits ──────────────────────────────────────────────────────
-  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
-
-  let { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("free_runs_used, is_subscribed")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    await supabaseAdmin.from("profiles").insert({
-      id: user.id,
-      email: user.email,
-      is_subscribed: !paymentsEnabled,
-    });
-    profile = { free_runs_used: 0, is_subscribed: !paymentsEnabled };
-  }
-
-  if (paymentsEnabled && profile.free_runs_used >= 20 && !profile.is_subscribed) {
-    return NextResponse.json({ error: "UPGRADE_REQUIRED" }, { status: 402 });
-  }
-
   // ── Parse body ────────────────────────────────────────────────────────────
   const body = await req.json();
   const listingUrl: string | null = body.listingUrl ?? null;
@@ -503,9 +505,56 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Provide a listingUrl or manualDescription" }, { status: 400 });
   }
 
+  // ── Ensure profile exists ─────────────────────────────────────────────────
+  let { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("subscription_tier")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) {
+    await supabaseAdmin.from("profiles").insert({ id: user.id, email: user.email });
+    profile = { subscription_tier: "free" };
+  }
+
+  const tier = (profile.subscription_tier ?? "free") as "free" | "single" | "unlimited";
+  const paymentsEnabled = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
+
+  // ── Access check ──────────────────────────────────────────────────────────
+  let isPartial = false;
+  let incrementSingleRun = false;
+  let listingUrlHash: string | null = null;
+
+  if (!paymentsEnabled || tier === "unlimited") {
+    // Beta mode or unlimited subscription — full access, no gating
+    isPartial = false;
+  } else if (tier === "single") {
+    if (!listingUrl) {
+      return NextResponse.json({ error: "Single-report access requires a listing URL" }, { status: 400 });
+    }
+    listingUrlHash = normalizeUrl(listingUrl);
+    const { data: purchase } = await supabaseAdmin
+      .from("purchased_reports")
+      .select("runs_used, max_runs")
+      .eq("user_id", user.id)
+      .eq("listing_url_hash", listingUrlHash)
+      .single();
+
+    if (!purchase) {
+      return NextResponse.json({ error: "No purchase found for this listing", code: "NO_PURCHASE" }, { status: 402 });
+    }
+    if (purchase.runs_used >= purchase.max_runs) {
+      return NextResponse.json({ error: "Run limit reached for this listing", code: "RUN_LIMIT_REACHED" }, { status: 402 });
+    }
+    incrementSingleRun = true;
+    isPartial = false;
+  } else {
+    // Free tier — allow but flag as partial
+    isPartial = true;
+  }
+
   // ── Schedule background work and return job ID immediately ────────────────
   const id = crypto.randomUUID();
-  const markFreeRun = paymentsEnabled && profile.free_runs_used < 20 && !profile.is_subscribed;
 
   after(async () => {
     try {
@@ -516,12 +565,13 @@ export async function POST(req: NextRequest) {
         listingUrl,
         manualTitle,
         manualDescription,
-        markFreeRun,
+        incrementSingleRun,
+        listingUrlHash,
       });
     } catch (error) {
       console.error(`[analyze] background job ${id} failed:`, error);
     }
   });
 
-  return NextResponse.json({ id });
+  return NextResponse.json({ id, isPartial });
 }

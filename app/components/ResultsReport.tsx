@@ -496,18 +496,57 @@ const PRINT_STYLES = `
 export function ResultsReport({
   data,
   showNav = true,
+  access = "full",
+  tier = "free",
+  runsRemaining = null,
+  reportId = "",
+  justUpgraded = false,
 }: {
   data: ReportData;
   showNav?: boolean;
+  access?: "full" | "partial";
+  tier?: "free" | "single" | "unlimited";
+  runsRemaining?: number | null;
+  reportId?: string;
+  justUpgraded?: boolean;
 }) {
   const tabKeys = Object.keys(data.description.tabs);
   const [descTab, setDescTab] = useState<string>(tabKeys[0] ?? "opening");
   const [descView, setDescView] = useState<"before" | "after">("after");
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [printTip, setPrintTip] = useState(false);
+  const [runBannerDismissed, setRunBannerDismissed] = useState(false);
+  const [paywallLoading, setPaywallLoading] = useState<"single" | "unlimited" | null>(null);
+  const [paywallError, setPaywallError] = useState("");
 
   const toggle = (i: number) =>
     setChecked((prev) => { const next = new Set(prev); next.has(i) ? next.delete(i) : next.add(i); return next; });
+
+  const handleUpgrade = async (upgradeTier: "single" | "unlimited") => {
+    setPaywallLoading(upgradeTier);
+    setPaywallError("");
+    try {
+      const res = await fetch("/api/stripe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier: upgradeTier,
+          listingUrl: data.url ?? "",
+          reportId,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.url) {
+        setPaywallError(json.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      window.location.href = json.url;
+    } catch {
+      setPaywallError("Network error. Please check your connection.");
+    } finally {
+      setPaywallLoading(null);
+    }
+  };
 
   const handleDownload = () => {
     toast.success("Opening print dialog…");
@@ -568,6 +607,35 @@ export function ResultsReport({
             <Link href="/" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1D3557", textDecoration: "none" }}>New Report</Link>
           </div>
         </nav>
+      )}
+
+      {/* Run-limit banner — single tier only, dismissed per session */}
+      {access === "full" && tier === "single" && runsRemaining !== null && runsRemaining <= 2 && !runBannerDismissed && (
+        <div style={{ background: "rgba(69,123,157,0.08)", borderBottom: "0.5px solid #A8DADC", padding: "0.65rem 2rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "1rem", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "0.82rem", color: "#457B9D", lineHeight: 1.5 }}>
+            You have <strong>{runsRemaining} rerun{runsRemaining !== 1 ? "s" : ""}</strong> remaining for this listing.{" "}
+            <button
+              onClick={() => handleUpgrade("unlimited")}
+              style={{ background: "none", border: "none", color: "#457B9D", fontWeight: 600, fontSize: "0.82rem", cursor: "pointer", textDecoration: "underline", padding: 0, fontFamily: "inherit" }}
+            >
+              Upgrade to unlimited for endless reruns on all your listings →
+            </button>
+          </span>
+          <button
+            onClick={() => setRunBannerDismissed(true)}
+            style={{ background: "none", border: "none", color: "#457B9D", cursor: "pointer", fontSize: "1rem", lineHeight: 1, padding: "0 0.25rem", flexShrink: 0 }}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Upgrade success banner */}
+      {justUpgraded && (
+        <div style={{ background: "rgba(168,218,220,0.2)", borderBottom: "0.5px solid #A8DADC", padding: "0.65rem 2rem", textAlign: "center", fontSize: "0.82rem", color: "#1D3557", fontWeight: 500 }}>
+          Your full report is now unlocked.
+        </div>
       )}
 
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "3rem 2rem 7rem" }}>
@@ -731,6 +799,10 @@ export function ResultsReport({
             </>
           )}
         </div>
+
+        {/* ── Sections 03–07: blurred + paywall for partial access ── */}
+        <div style={{ position: "relative" }}>
+          <div style={{ filter: access === "partial" ? "blur(4px)" : "none", pointerEvents: access === "partial" ? "none" : "auto", userSelect: access === "partial" ? "none" : "auto", transition: "filter 0.2s" }}>
 
         {/* 03 SEO & Search Ranking */}
         <div className="report-section" style={{ ...card, marginBottom: "0.75rem" }}>
@@ -936,6 +1008,97 @@ export function ResultsReport({
             })}
           </div>
         </div>
+
+          </div>{/* end blur wrapper */}
+
+          {/* Paywall overlay */}
+          {access === "partial" && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "3rem" }}>
+              {/* Radial gradient fade */}
+              <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 50% at 50% 20%, #FFFFFF 30%, transparent 100%)", pointerEvents: "none" }} />
+
+              <div style={{ position: "sticky", top: "2rem", zIndex: 10, width: "100%", maxWidth: 520, padding: "0 1rem" }}>
+                <div style={{ background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "2rem", boxShadow: "0 8px 40px rgba(29,53,87,0.12)" }}>
+
+                  {/* Header copy */}
+                  <p style={{ fontSize: "1rem", fontWeight: 600, color: "#1D3557", marginBottom: "0.5rem", lineHeight: 1.4 }}>
+                    {(data.seo.reviewCount ?? 0) > 0
+                      ? `We analyzed all ${data.seo.reviewCount} reviews from your listing`
+                      : "Your full analysis is ready"}
+                  </p>
+                  <p style={{ fontSize: "0.875rem", color: "var(--muted)", lineHeight: 1.6, marginBottom: "1.5rem" }}>
+                    Unlock the full report to see where you rank vs. competitors, what guests are really saying, and your complete fix plan.
+                  </p>
+
+                  {/* Tier cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1.25rem" }}>
+
+                    {/* $4 single — only show if user hasn't already purchased this listing */}
+                    {tier !== "single" && (
+                      <div style={{ background: "#FFFFFF", border: "1px solid #A8DADC", borderRadius: 12, padding: "1.25rem", display: "flex", flexDirection: "column" }}>
+                        <p style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--muted)", letterSpacing: "0.07em", marginBottom: "0.75rem" }}>THIS LISTING</p>
+                        <p style={{ fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: "0.2rem", color: "#1D3557" }}>$4</p>
+                        <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>one-time</p>
+                        <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem", flex: 1 }}>
+                          {["Full report", "3 reruns on this listing"].map((f) => (
+                            <li key={f} style={{ fontSize: "0.78rem", color: "var(--muted)", display: "flex", gap: "0.4rem" }}>
+                              <span style={{ color: "#E63946", flexShrink: 0 }}>✓</span> {f}
+                            </li>
+                          ))}
+                        </ul>
+                        <button
+                          onClick={() => handleUpgrade("single")}
+                          disabled={paywallLoading !== null}
+                          style={{ width: "100%", height: 38, background: "#FFFFFF", border: "1.5px solid #E63946", color: "#E63946", fontWeight: 600, fontSize: "0.82rem", borderRadius: 8, cursor: paywallLoading ? "not-allowed" : "pointer", opacity: paywallLoading === "single" ? 0.6 : 1, fontFamily: "inherit" }}
+                          onMouseEnter={(e) => { if (!paywallLoading) { (e.currentTarget as HTMLButtonElement).style.background = "#E63946"; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }}}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#FFFFFF"; (e.currentTarget as HTMLButtonElement).style.color = "#E63946"; }}
+                        >
+                          {paywallLoading === "single" ? "Redirecting…" : "Unlock — $4 →"}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* $9/mo unlimited — highlighted */}
+                    <div style={{ background: "#FFFFFF", border: "2px solid #457B9D", borderRadius: 12, padding: "1.25rem", display: "flex", flexDirection: "column", position: "relative", gridColumn: tier === "single" ? "1 / -1" : "auto" }}>
+                      <div style={{ position: "absolute", top: -1, right: 14, background: "#457B9D", color: "#FFFFFF", fontSize: "0.62rem", fontWeight: 600, padding: "0.18rem 0.5rem", borderRadius: "0 0 6px 6px", letterSpacing: "0.05em" }}>
+                        MOST POPULAR
+                      </div>
+                      <p style={{ fontSize: "0.68rem", fontWeight: 600, color: "#457B9D", letterSpacing: "0.07em", marginBottom: "0.75rem" }}>ALL LISTINGS</p>
+                      <p style={{ fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: "0.2rem", color: "#1D3557" }}>$9</p>
+                      <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginBottom: "1rem" }}>/month · cancel anytime</p>
+                      <ul style={{ listStyle: "none", padding: 0, margin: "0 0 1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem", flex: 1 }}>
+                        {(tier === "single"
+                          ? ["Unlimited listings", "Unlimited reruns", "All future features"]
+                          : ["Unlimited listings", "Unlimited reruns", "All future features"]
+                        ).map((f) => (
+                          <li key={f} style={{ fontSize: "0.78rem", color: "var(--muted)", display: "flex", gap: "0.4rem" }}>
+                            <span style={{ color: "#E63946", flexShrink: 0 }}>✓</span> {f}
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        onClick={() => handleUpgrade("unlimited")}
+                        disabled={paywallLoading !== null}
+                        style={{ width: "100%", height: 38, background: "#E63946", border: "none", color: "#fff", fontWeight: 600, fontSize: "0.82rem", borderRadius: 8, cursor: paywallLoading ? "not-allowed" : "pointer", opacity: paywallLoading === "unlimited" ? 0.6 : 1, fontFamily: "inherit" }}
+                      >
+                        {paywallLoading === "unlimited" ? "Redirecting…" : tier === "single" ? "Upgrade to unlimited →" : "Unlock — $9/mo →"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {paywallError && (
+                    <p style={{ fontSize: "0.75rem", color: "#DC2626", textAlign: "center", margin: "0 0 0.75rem" }}>{paywallError}</p>
+                  )}
+
+                  <p style={{ fontSize: "0.72rem", color: "var(--muted)", textAlign: "center", margin: 0 }}>
+                    🔒 Secured by Stripe · Cancel anytime
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>{/* end paywall wrapper */}
 
       </div>
 

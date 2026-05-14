@@ -27,17 +27,56 @@ function relativeTime(dateString: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return (u.hostname + u.pathname).toLowerCase();
+  } catch {
+    return url.toLowerCase();
+  }
+}
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/auth");
 
-  const { data: reports } = await supabaseAdmin
-    .from("reports")
-    .select("id, listing_url, created_at, result")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+  const [reportsResult, profileResult] = await Promise.all([
+    supabaseAdmin
+      .from("reports")
+      .select("id, listing_url, created_at, result")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabaseAdmin
+      .from("profiles")
+      .select("subscription_tier")
+      .eq("id", user.id)
+      .single(),
+  ]);
+
+  const reports = reportsResult.data ?? [];
+  const tier = (profileResult.data?.subscription_tier ?? "free") as "free" | "single" | "unlimited";
+
+  // For single-tier users, build a map of listing_url_hash → purchase info
+  let purchasedMap = new Map<string, { runs_used: number; max_runs: number }>();
+  if (tier === "single") {
+    const { data: purchases } = await supabaseAdmin
+      .from("purchased_reports")
+      .select("listing_url_hash, runs_used, max_runs")
+      .eq("user_id", user.id);
+    for (const p of purchases ?? []) {
+      purchasedMap.set(p.listing_url_hash, { runs_used: p.runs_used, max_runs: p.max_runs });
+    }
+  }
+
+  function getAccessForReport(listingUrl: string | null): "full" | "partial" {
+    if (tier === "unlimited") return "full";
+    if (tier === "single" && listingUrl) {
+      return purchasedMap.has(normalizeUrl(listingUrl)) ? "full" : "partial";
+    }
+    return "partial";
+  }
 
   const pillStyle = (bg: string, color: string, border: string): React.CSSProperties => ({
     display: "inline-flex",
@@ -73,7 +112,7 @@ export default async function DashboardPage() {
           {user.email}
         </p>
 
-        {!reports || reports.length === 0 ? (
+        {reports.length === 0 ? (
           <div style={{ background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "var(--radius)", padding: "4rem 2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
             <div style={{ width: 80, height: 80, background: "#A8DADC", borderRadius: 12, flexShrink: 0 }} />
             <h2 style={{ fontSize: "1.1rem", fontWeight: 500, margin: 0, color: "var(--text)" }}>
@@ -102,6 +141,11 @@ export default async function DashboardPage() {
                 ? report.listing_url.replace(/https?:\/\/(www\.)?/, "").slice(0, 70)
                 : "Manual analysis";
 
+              const access = getAccessForReport(report.listing_url);
+              const purchase = tier === "single" && report.listing_url
+                ? purchasedMap.get(normalizeUrl(report.listing_url))
+                : undefined;
+
               return (
                 <div
                   key={report.id}
@@ -114,19 +158,52 @@ export default async function DashboardPage() {
                     <p style={{ margin: "0 0 0.15rem", fontSize: "0.78rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {listingName ? displayUrl : timeAgo}
                     </p>
-                    {listingName && <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--muted)" }}>{timeAgo}</p>}
+                    {listingName && (
+                      <p style={{ margin: "0 0 0.15rem", fontSize: "0.75rem", color: "var(--muted)" }}>{timeAgo}</p>
+                    )}
+                    {purchase && (
+                      <p style={{ margin: 0, fontSize: "0.73rem", color: "var(--muted)" }}>
+                        {purchase.runs_used} of {purchase.max_runs} reruns used
+                      </p>
+                    )}
                   </div>
-                  {score > 0 && (
-                    <span style={pillStyle(meta.bg, meta.color, meta.border)}>
-                      {score}/100 · {meta.label}
-                    </span>
-                  )}
-                  <Link
-                    href={`/results/${report.id}`}
-                    style={{ fontSize: "0.82rem", color: "var(--accent)", textDecoration: "none", fontWeight: 500, flexShrink: 0 }}
-                  >
-                    View report →
-                  </Link>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0, flexWrap: "wrap" }}>
+                    {/* Access pill */}
+                    {access === "full" ? (
+                      <span style={pillStyle("rgba(34,197,94,0.1)", "#166534", "rgba(34,197,94,0.3)")}>
+                        Full report
+                      </span>
+                    ) : (
+                      <span style={pillStyle("rgba(0,0,0,0.04)", "var(--muted)", "var(--border)")}>
+                        Free preview
+                      </span>
+                    )}
+
+                    {/* Score pill */}
+                    {score > 0 && (
+                      <span style={pillStyle(meta.bg, meta.color, meta.border)}>
+                        {score}/100 · {meta.label}
+                      </span>
+                    )}
+
+                    {/* CTA */}
+                    {access === "partial" ? (
+                      <Link
+                        href={`/results/${report.id}`}
+                        style={{ fontSize: "0.82rem", color: "#E63946", textDecoration: "none", fontWeight: 600, flexShrink: 0 }}
+                      >
+                        Unlock →
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/results/${report.id}`}
+                        style={{ fontSize: "0.82rem", color: "var(--accent)", textDecoration: "none", fontWeight: 500, flexShrink: 0 }}
+                      >
+                        View report →
+                      </Link>
+                    )}
+                  </div>
                 </div>
               );
             })}
