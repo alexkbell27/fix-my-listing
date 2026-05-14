@@ -40,7 +40,7 @@ export default function HeroForm({ onNavigate, buttonLabel = "Get my SEO report 
     if (onNavigate) {
       onNavigate(trimmed);
     } else {
-      router.push(`/preview?url=${encodeURIComponent(trimmed)}`);
+      router.push(`/auth?next=${encodeURIComponent(`/analyze?url=${trimmed}`)}`);
     }
   };
 

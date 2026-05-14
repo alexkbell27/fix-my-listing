@@ -120,10 +120,11 @@ h2 { font-family: var(--font-serif, Georgia, serif); }
 @media (max-width: 900px) {
   .lp-hero-grid    { grid-template-columns: 1fr !important; }
   .lp-ba-grid      { grid-template-columns: 1fr !important; }
+  .lp-ba-arrow     { display: none !important; }
   .lp-steps-grid   { grid-template-columns: 1fr !important; }
   .lp-pricing-grid { grid-template-columns: 1fr !important; }
   .lp-testi-grid   { grid-template-columns: 1fr !important; }
-  .lp-hero-right   { display: none !important; }
+  .lp-hero-right   { height: 320px; padding: 0 !important; }
   .lp-hero-left    { padding: 3rem 2rem !important; }
 }
 @media (max-width: 640px) {

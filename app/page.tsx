@@ -15,10 +15,10 @@ const NAVY = "#1D3557";
 const DARK_NAVY = "#12243a";
 
 const STATS = [
-  { value: "2,300+", label: "listings ranked higher" },
-  { value: "+$340/mo", label: "avg. revenue lift" },
-  { value: "+14", label: "avg. positions gained" },
-  { value: "6 wks", label: "avg. time to results" },
+  { value: "342", label: "listings ranked higher" },
+  { value: "27,000+", label: "reviews analyzed" },
+  { value: "6 bookings", label: "avg. monthly gain" },
+  { value: "+14", label: "avg. search positions gained" },
 ];
 
 const STEPS = [
@@ -77,9 +77,9 @@ function BeforeAfterCard({ card, variant }: { card: BACard; variant: "before" | 
       {/* Photo */}
       {card.photoSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={card.photoSrc} alt="" style={{ width: "100%", height: 130, objectFit: "cover", display: "block" }} />
+        <img src={card.photoSrc} alt="" style={{ width: "100%", height: 220, objectFit: "cover", objectPosition: "top", display: "block" }} />
       ) : (
-        <div style={{ height: 130, background: "linear-gradient(135deg, #EAF1F8 0%, #D6E4F0 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ height: 220, background: "linear-gradient(135deg, #EAF1F8 0%, #D6E4F0 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
             <rect x="3" y="5" width="18" height="14" rx="2" fill="#AABFD4" />
             <circle cx="8.5" cy="10.5" r="1.5" fill="#7A9FBE" />
@@ -279,7 +279,7 @@ export default function HomePage() {
   const handleFormNavigate = useCallback((url: string) => {
     const encoded = encodeURIComponent(url);
     if (!user) {
-      router.push(`/preview?url=${encoded}`);
+      router.push(`/auth?next=${encodeURIComponent(`/analyze?url=${url}`)}`);
     } else {
       router.push(`/analyze?url=${encoded}`);
     }
@@ -541,29 +541,27 @@ export default function HomePage() {
           </p>
 
           {/* Two columns: BEFORE (left) | AFTER (right). Each row = one listing. */}
-          <div className="lp-ba-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-            {/* Left column — all BEFORE cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              <BeforeAfterCard
-                card={{ position: "Page 4 in search", score: 43, title: "Cozy place in San Diego · Private room", tags: ["Weak title", "No keywords", "56% occupancy"], insight: "Title missing 6 high-volume search terms. Description 40% shorter than top-ranked competitors. No mention of beach proximity despite being 4 min walk." }}
-                variant="before"
-              />
-              <BeforeAfterCard
-                card={{ position: "Page 3 in search", score: 38, title: "Modern apartment downtown Austin", tags: ["Generic title", "Missing amenities", "Competitor gap"], insight: "12 competitor listings ranking for '6th Street,' 'live music,' and 'walkable' — none mentioned in listing." }}
-                variant="before"
-              />
-            </div>
-            {/* Right column — all AFTER cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              <BeforeAfterCard
-                card={{ position: "Page 1, position 3", score: 74, title: "4-min walk to beach · Bright private room · Parking + fast WiFi · San Diego", tags: ["SEO title", "Keywords added", "84% occupancy"], insight: "Jumped from page 4 to page 1, position 3. Occupancy 56%→84%. Revenue up $340/mo with zero price change." }}
-                variant="after"
-              />
-              <BeforeAfterCard
-                card={{ position: "Top 3 ranked", score: 78, title: "Walk to 6th St · Modern 1BR · Fast WiFi · Rooftop Access · Austin TX", tags: ["Local keywords", "Full amenities", "Top-3 ranked"], insight: "Occupancy 61%→84%. Revenue up $410/mo." }}
-                variant="after"
-              />
-            </div>
+          <div className="lp-ba-grid" style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", columnGap: "1rem", rowGap: "3rem", alignItems: "center" }}>
+            <BeforeAfterCard
+              card={{ position: "Page 4 in search", score: 43, photoSrc: "/before1.png", title: "Cozy place in San Diego · Private room", tags: ["Weak title", "No keywords", "56% occupancy"], insight: "Title missing high-volume airport search term. Description 40% shorter than top-ranked competitors. No mention of beach gear despite being highlight of reviews." }}
+              variant="before"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/arrow.png" alt="" className="lp-ba-arrow" style={{ width: 80, display: "block" }} />
+            <BeforeAfterCard
+              card={{ position: "Page 1, position 3", score: 74, photoSrc: "/after1.png", title: "4-min walk to beach · Bright private room · Parking + fast WiFi · San Diego", tags: ["SEO title", "Keywords added", "84% occupancy"], insight: "Jumped from page 4 to page 1, position 3 on key search terms. Occupancy doubled month-over-month with zero price change." }}
+              variant="after"
+            />
+            <BeforeAfterCard
+              card={{ position: "Page 3 in search", score: 38, photoSrc: "/before2.png", title: "Modern apartment downtown Austin", tags: ["Generic title", "Missing amenities", "Competitor gap"], insight: "No mention of beach proximity despite being 4 min walk. 12 competitor listings ranking for &apos;parking&apos;, and &apos;fast WiFi&apos;. Brightness a concern in reviews." }}
+              variant="before"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/arrow.png" alt="" className="lp-ba-arrow" style={{ width: 80, display: "block" }} />
+            <BeforeAfterCard
+              card={{ position: "Top 3 ranked", score: 78, photoSrc: "/after2.png", title: "Walk to 6th St · Modern 1BR · Fast WiFi · Rooftop Access · Austin TX", tags: ["Local keywords", "Full amenities", "Top-3 ranked"], insight: "Average 5 extra monthly bookings since. Revenue up ~$2400/mo." }}
+              variant="after"
+            />
           </div>
 
           <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
