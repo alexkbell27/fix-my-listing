@@ -502,64 +502,15 @@ export default function HomePage() {
         {/* Right — navy browser mockup
             To swap in a <video>: replace the contents of the .lp-hero-right div
             with <video src="..." autoPlay muted loop playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} /> */}
-        <div className="lp-hero-right" style={{ background: NAVY, display: "flex", alignItems: "center", justifyContent: "center", padding: "3rem 2.5rem", position: "relative", overflow: "hidden" }}>
-          {/* Subtle grid pattern */}
-          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(168,218,220,0.08) 1px, transparent 1px)", backgroundSize: "24px 24px", pointerEvents: "none" }} />
-
-          {/* Browser frame */}
-          <div style={{ width: "100%", maxWidth: 460, borderRadius: 12, overflow: "hidden", boxShadow: "0 24px 80px rgba(0,0,0,0.4)", position: "relative" }}>
-            {/* Chrome bar */}
-            <div style={{ background: "#1a2a3a", padding: "0.65rem 1rem", display: "flex", alignItems: "center", gap: "0.65rem" }}>
-              {/* Traffic lights */}
-              <div style={{ display: "flex", gap: "0.4rem" }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#FF5F57" }} />
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#FFBD2E" }} />
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28CA41" }} />
-              </div>
-              {/* URL bar */}
-              <div style={{ flex: 1, background: "rgba(255,255,255,0.08)", borderRadius: 6, padding: "0.25rem 0.75rem", fontSize: "0.7rem", color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>
-                airbnb.com/rooms/…
-              </div>
-            </div>
-
-            {/* Listing body */}
-            <div style={{ background: "#FFFFFF" }}>
-              {/* Photo placeholder */}
-              <div style={{ height: 180, background: "linear-gradient(135deg, #D6E4F0 0%, #BDD0E5 100%)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="5" width="18" height="14" rx="2" fill="#8BAFC9" />
-                  <circle cx="8.5" cy="10.5" r="2" fill="#6A94B8" />
-                  <path d="M3 17l5-5 3.5 3.5 4.5-6L21 17" stroke="#6A94B8" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                {/* Analyzing pill — top left */}
-                <div style={{ position: "absolute", top: "0.7rem", left: "0.7rem", background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)", borderRadius: 999, padding: "0.3rem 0.7rem", display: "flex", alignItems: "center", gap: "0.45rem" }}>
-                  <div className="lp-pulse-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: "#28CA41", flexShrink: 0 }} />
-                  <span style={{ fontSize: "0.65rem", color: "#FFFFFF", fontWeight: 500, whiteSpace: "nowrap" }}>Analyzing ranking signals…</span>
-                </div>
-              </div>
-
-              {/* Title bar */}
-              <div style={{ padding: "0.85rem 1rem 0.5rem" }}>
-                <div style={{ height: 14, background: "#E5E7EB", borderRadius: 4, width: "78%", marginBottom: "0.45rem" }} />
-                <div style={{ height: 11, background: "#F3F4F6", borderRadius: 4, width: "52%" }} />
-              </div>
-
-              {/* Meta bar */}
-              <div style={{ padding: "0 1rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", gap: "0.4rem" }}>
-                  <div style={{ height: 10, background: "#F3F4F6", borderRadius: 4, width: 48 }} />
-                  <div style={{ height: 10, background: "#F3F4F6", borderRadius: 4, width: 36 }} />
-                </div>
-                <div style={{ height: 13, background: "#E5E7EB", borderRadius: 4, width: 56 }} />
-              </div>
-            </div>
-          </div>
-
-          {/* SEO score badge — bottom-right of frame */}
-          <div style={{ position: "absolute", bottom: "3.5rem", right: "2rem", background: RED, borderRadius: 12, padding: "0.65rem 1rem", textAlign: "center", boxShadow: "0 8px 32px rgba(230,59,46,0.4)" }}>
-            <div style={{ fontSize: "2rem", fontWeight: 700, color: "#FFFFFF", lineHeight: 1, letterSpacing: "-0.04em" }}>38</div>
-            <div style={{ fontSize: "0.58rem", fontWeight: 700, color: "rgba(255,255,255,0.8)", letterSpacing: "0.1em", marginTop: "0.1rem" }}>SEO SCORE</div>
-          </div>
+        <div className="lp-hero-right" style={{ background: "#FFFFFF", position: "relative", padding: "0 1.5rem" }}>
+          <video
+            src="/demo.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", filter: "drop-shadow(0 0 20px rgba(0,0,0,0.15))" }}
+          />
         </div>
       </section>
 
