@@ -464,9 +464,10 @@ async function runAnalysis(opts: {
   const { id, userId, userEmail, listingUrl, manualTitle, manualDescription, incrementSingleRun, listingUrlHash } = opts;
 
   let listingContext = "";
+  let listingData: Record<string, unknown> | null = null;
 
   if (listingUrl) {
-    const listingData = await scrapeListingWithPricingRetry(listingUrl);
+    listingData = await scrapeListingWithPricingRetry(listingUrl);
 
     const locObj = (typeof listingData.location === "object" && listingData.location !== null ? listingData.location : {}) as Record<string, unknown>;
     const addrObj = (typeof listingData.address === "object" && listingData.address !== null ? listingData.address : {}) as Record<string, unknown>;
@@ -518,6 +519,29 @@ async function runAnalysis(opts: {
     url: listingUrl,
     createdAt: new Date().toISOString(),
     ...parsed,
+    criticalFixCount: parsed.actionPlan.filter((a) => a.impact === "high").length,
+    revenueLift: Math.max(0, parsed.projectedScore - parsed.currentScore),
+    seo: {
+      ...parsed.seo,
+      instantBook: listingData != null
+        ? Boolean(
+            listingData.instantBookable ??
+            listingData.isInstantBookable ??
+            listingData.instantBook ??
+            listingData.bookItQuickly ??
+            parsed.seo.instantBook
+          )
+        : parsed.seo.instantBook,
+      reviewCount: listingData != null
+        ? Number(
+            (listingData as Record<string, unknown>).reviewsCount ??
+            (listingData as Record<string, unknown>).numberOfReviews ??
+            (listingData as Record<string, unknown>).starRatingCount ??
+            ((listingData as Record<string, unknown>).ratings as Record<string, unknown> | undefined)?.reviewsCount ??
+            parsed.seo.reviewCount
+          )
+        : parsed.seo.reviewCount,
+    },
   };
 
   await supabaseAdmin.from("reports").insert({

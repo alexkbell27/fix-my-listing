@@ -26,6 +26,7 @@ export interface ReportData {
   title: {
     current: string;
     currentCharCount: number;
+    rating?: "poor" | "ok" | "good";
     score: number;
     issues: string[];
     suggestions: string[];
@@ -222,6 +223,7 @@ export function sanitize(raw: unknown): ReportData {
     title: {
       current: String(m.title?.current ?? ""),
       currentCharCount: Number(m.title?.currentCharCount ?? 0),
+      rating: (["poor", "ok", "good"].includes(m.title?.rating) ? m.title.rating : undefined) as "poor" | "ok" | "good" | undefined,
       score: 0,
       issues: [],
       suggestions: [],
@@ -745,7 +747,7 @@ export function ResultsReport({
         {/* 01 Title */}
         <div className="report-section" style={{ ...card, marginBottom: "0.75rem" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
-            <SectionTitle n="01" title="Title & Keyword Analysis" sub={data.title.current ? `Your current title is ${data.title.currentCharCount} characters — well below the 50-char sweet spot.` : undefined} />
+            <SectionTitle n="01" title="Title & Keyword Analysis" sub={data.title.current ? `Your current title is ${data.title.currentCharCount} characters${data.title.currentCharCount >= 45 && data.title.currentCharCount <= 55 ? " — right in the 50-char sweet spot." : data.title.currentCharCount < 45 ? " — well below the 50-char sweet spot." : " — over the 50-char sweet spot, may be truncated in search."}` : undefined} />
             <ScoreBadge score={data.title.score} />
           </div>
           {data.title.current && (
@@ -753,7 +755,14 @@ export function ResultsReport({
               <span style={label}>Current</span>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "0.5rem", marginBottom: "1.5rem" }}>
                 <div style={{ flex: 1, background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.75rem 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>{data.title.current}</div>
-                <span className="tag-bad" style={pill("rgba(230,57,70,0.1)", "#E63946", "rgba(230,57,70,0.35)")}>Poor</span>
+                {data.title.rating && (() => {
+                  const cfg = {
+                    poor: { cls: "tag-bad", bg: "rgba(230,57,70,0.1)", color: "#E63946", border: "rgba(230,57,70,0.35)", label: "Poor" },
+                    ok:   { cls: "tag-warn", bg: "rgba(217,119,6,0.1)", color: "#D97706", border: "rgba(217,119,6,0.35)", label: "OK" },
+                    good: { cls: "tag-good", bg: "rgba(168,218,220,0.3)", color: "#1D3557", border: "#A8DADC", label: "Good" },
+                  }[data.title.rating];
+                  return <span className={cfg.cls} style={pill(cfg.bg, cfg.color, cfg.border)}>{cfg.label}</span>;
+                })()}
                 <span style={pill("#FFFFFF", "var(--muted)", "var(--border)")}>{data.title.currentCharCount} chars</span>
               </div>
             </>
@@ -923,20 +932,24 @@ export function ResultsReport({
                   These are untapped selling points guests care about — add them to your description.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {data.reviews!.hiddenInsights.map((ins, i) => (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "3fr 2fr", borderRadius: 10, overflow: "hidden", border: "0.5px solid var(--border)" }}>
-                      <div style={{ background: "#F1FAEE", padding: "1rem 1.25rem", display: "flex", alignItems: "center" }}>
-                        <p style={{ fontSize: "0.875rem", color: "#1D3557", margin: 0, lineHeight: 1.55 }}>{ins.insight}</p>
-                      </div>
-                      <div style={{ background: "#1D3557", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "0.75rem" }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
-                          <span style={{ color: "#A8DADC", fontSize: "1rem", flexShrink: 0 }}>→</span>
-                          <p style={{ fontSize: "0.8rem", color: "#F1FAEE", margin: 0, lineHeight: 1.55 }}>{ins.suggestedAddition}</p>
+                  {data.reviews!.hiddenInsights.map((ins, i) => {
+                    const quoted = ins.suggestedAddition.match(/[""'"](.+?)[""'"]/);
+                    const copyText = quoted ? quoted[1].trim() : null;
+                    return (
+                      <div key={i} style={{ display: "grid", gridTemplateColumns: "3fr 2fr", borderRadius: 10, overflow: "hidden", border: "0.5px solid var(--border)" }}>
+                        <div style={{ background: "#F1FAEE", padding: "1rem 1.25rem", display: "flex", alignItems: "center" }}>
+                          <p style={{ fontSize: "0.875rem", color: "#1D3557", margin: 0, lineHeight: 1.55 }}>{ins.insight}</p>
                         </div>
-                        <CopyBtn text={ins.suggestedAddition} />
+                        <div style={{ background: "#1D3557", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "0.75rem" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem" }}>
+                            <span style={{ color: "#A8DADC", fontSize: "1rem", flexShrink: 0 }}>→</span>
+                            <p style={{ fontSize: "0.8rem", color: "#F1FAEE", margin: 0, lineHeight: 1.55 }}>{ins.suggestedAddition}</p>
+                          </div>
+                          {copyText && <CopyBtn text={copyText} />}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1048,7 +1061,6 @@ export function ResultsReport({
                 <div style={{ fontSize: "0.82rem", fontWeight: 500, marginTop: "0.15rem", color: data.seo.instantBook ? "#16A34A" : "#DC2626" }}>{data.seo.instantBook ? "Enabled" : "Off — enable it"}</div>
               </div>
             </div>
-            {data.seo.estimatedResponseRate !== "N/A" && <div style={{ flex: 1, minWidth: 140, background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem 1rem" }}><span style={label}>Response rate</span><div style={{ fontSize: "0.9rem", fontWeight: 500, marginTop: "0.15rem" }}>{data.seo.estimatedResponseRate}</div></div>}
             {data.seo.reviewCount > 0 && <div style={{ flex: 1, minWidth: 140, background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8, padding: "0.85rem 1rem" }}><span style={label}>Reviews</span><div style={{ fontSize: "0.9rem", fontWeight: 500, marginTop: "0.15rem" }}>{data.seo.reviewCount}</div></div>}
           </div>
         </div>
@@ -1075,7 +1087,8 @@ export function ResultsReport({
           {data.amenities.quickWins.length > 0 && (
             <>
               <span style={label}>Quick wins</span>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginTop: "0.65rem" }}>
+              <p style={{ fontSize: "0.72rem", color: "var(--muted)", fontStyle: "italic", margin: "0.35rem 0 0.5rem" }}>% estimates represent industry averages; your results may vary.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginTop: "0.15rem" }}>
                 {data.amenities.quickWins.map((win, i) => (
                   <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: "1rem", padding: "0.85rem 1rem", background: "#FFFFFF", border: "0.5px solid var(--border)", borderRadius: 8 }}>
                     <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>{win.item}</span>
@@ -1122,23 +1135,6 @@ export function ResultsReport({
                   <div style={{ fontSize: "0.95rem", fontWeight: 500, marginTop: "0.4rem" }}>{val}</div>
                 </div>
               ))}
-            </div>
-          )}
-          {data.pricing.nextHighDemandEvent.name && (
-            <div style={{ background: "rgba(230,57,70,0.08)", border: "0.5px solid rgba(230,57,70,0.3)", borderRadius: 10, padding: "1.1rem 1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-              <div>
-                <p style={{ margin: "0 0 0.2rem", fontSize: "0.72rem", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Upcoming high-demand event</p>
-                <p style={{ margin: "0 0 0.15rem", fontSize: "0.9rem", fontWeight: 500 }}>{data.pricing.nextHighDemandEvent.name}</p>
-                <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--muted)" }}>{data.pricing.nextHighDemandEvent.date}</p>
-              </div>
-              {data.pricing.nextHighDemandEvent.suggestedPrice > 0 && (
-                <div style={{ textAlign: "right" }}>
-                  <span style={label}>Suggested price</span>
-                  <div style={{ fontSize: "1.6rem", fontWeight: 500, color: "var(--accent)", letterSpacing: "-0.03em", marginTop: "0.2rem" }}>
-                    ${data.pricing.nextHighDemandEvent.suggestedPrice}<span style={{ fontSize: "0.8rem", fontWeight: 400, color: "var(--muted)" }}>/night</span>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
