@@ -89,16 +89,19 @@ h2 { font-family: var(--font-serif, Georgia, serif); }
 
 /* ── Signed-in home page ─────────────────────────────────────────────────── */
 .li-dark-input::placeholder { color: rgba(255,255,255,0.4); }
-.li-hero-flex  { display: flex; gap: 3rem; align-items: center; }
-.li-stat-cards { display: flex; gap: 0.75rem; flex-shrink: 0; }
+.li-hero-flex { display: flex; gap: 3rem; align-items: center; }
+.li-stat-col  { display: flex; flex-direction: column; gap: 0.5rem; flex-shrink: 0; }
+.li-navy-form { display: flex; gap: 0.5rem; width: 100%; }
 
 @media (max-width: 860px) {
-  .li-hero-flex  { flex-direction: column !important; }
-  .li-stat-cards { width: 100%; justify-content: stretch; }
-  .li-stat-cards > * { flex: 1; }
+  .li-hero-flex { flex-direction: column !important; align-items: stretch !important; gap: 1.5rem !important; }
+  .li-stat-col  { flex-direction: row !important; flex-wrap: wrap; }
+  .li-stat-col > * { flex: 1; min-width: 130px; }
 }
 @media (max-width: 480px) {
-  .li-stat-cards { flex-direction: column !important; }
+  .li-navy-form { flex-direction: column !important; }
+  .li-navy-form button { width: 100%; }
+  .li-stat-col > * { min-width: 100px; }
 }
 
 /* ── Landing page responsive grids ──────────────────────────────────────── */
@@ -121,6 +124,7 @@ h2 { font-family: var(--font-serif, Georgia, serif); }
   .lp-pricing-grid { grid-template-columns: 1fr !important; }
   .lp-testi-grid   { grid-template-columns: 1fr !important; }
   .lp-hero-right   { display: none !important; }
+  .lp-hero-left    { padding: 3rem 2rem !important; }
 }
 @media (max-width: 640px) {
   .lp-stats-grid   { grid-template-columns: 1fr 1fr !important; }

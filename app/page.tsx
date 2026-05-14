@@ -157,8 +157,8 @@ function NavyUrlForm({ onNavigate }: { onNavigate: (url: string) => void }) {
   const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const url = value.trim();
-    if (!url.includes("airbnb.com")) {
-      setError("Please enter a valid Airbnb listing URL");
+    if (!url.includes("airbnb.com") || !url.includes("/rooms/")) {
+      setError("Please enter a valid Airbnb listing URL (airbnb.com/rooms/...)");
       return;
     }
     onNavigate(url);
@@ -166,7 +166,7 @@ function NavyUrlForm({ onNavigate }: { onNavigate: (url: string) => void }) {
 
   return (
     <div>
-      <form onSubmit={handleSubmit} style={{ display: "flex", gap: "0.5rem", width: "100%" }}>
+      <form onSubmit={handleSubmit} className="li-navy-form">
         <input
           type="url"
           className="li-dark-input"
@@ -303,7 +303,7 @@ export default function HomePage() {
           <div ref={dropdownRef} style={{ position: "relative" }}>
             <button
               onClick={() => setDropdownOpen((o) => !o)}
-              style={{ width: 32, height: 32, borderRadius: "50%", background: dropdownOpen ? "rgba(29,53,87,0.08)" : "rgba(29,53,87,0.05)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              style={{ width: 40, height: 40, borderRadius: "50%", background: dropdownOpen ? "rgba(29,53,87,0.08)" : "rgba(29,53,87,0.05)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
               aria-label="Profile menu"
             >
               <ProfileIcon />
@@ -351,7 +351,7 @@ export default function HomePage() {
 
         {/* Navy hero */}
         <section style={{ background: NAVY, padding: "3rem 2rem" }}>
-          <div style={{ maxWidth: 860, margin: "0 auto", display: "flex", gap: "3rem", alignItems: "center" }}>
+          <div className="li-hero-flex" style={{ maxWidth: 860, margin: "0 auto" }}>
 
             {/* Left: all text + form */}
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -389,7 +389,7 @@ export default function HomePage() {
 
             {/* Right: stat boxes, centered against all left content */}
             {canRunReport && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", flexShrink: 0 }}>
+              <div className="li-stat-col">
                 {[
                   { label: "Total reports",    value: userStats ? String(userStats.total)    : "—" },
                   { label: "Listings tracked", value: userStats ? String(userStats.distinct) : "—" },
@@ -481,7 +481,7 @@ export default function HomePage() {
       <section className="lp-hero-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 620 }}>
 
         {/* Left — white */}
-        <div style={{ background: "#FFFFFF", padding: "5rem 4rem 5rem 5vw", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div className="lp-hero-left" style={{ background: "#FFFFFF", padding: "5rem 4rem 5rem 5vw", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <p style={{ fontSize: "0.68rem", fontWeight: 600, color: RED, letterSpacing: "0.12em", marginBottom: "1.25rem" }}>
             AIRBNB SEO &amp; SEARCH RANKING
           </p>

@@ -92,7 +92,7 @@ export default async function DashboardPage() {
     <div style={{ background: "#FFFFFF", minHeight: "100vh" }}>
 
       {/* Nav */}
-      <nav style={{ background: "#FFFFFF", borderBottom: "0.5px solid #E5E7EB", padding: "0 2rem", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+      <nav style={{ background: "#FFFFFF", borderBottom: "0.5px solid #E5E7EB", padding: "0 clamp(1rem, 4vw, 2rem)", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
         <Link href="/" style={{ textDecoration: "none" }}>
           <Image src="/logo-full.png" alt="Fix My Listing" height={28} width={140} style={{ height: 28, width: "auto", display: "block" }} />
         </Link>
