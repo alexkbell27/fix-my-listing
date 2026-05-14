@@ -87,6 +87,32 @@ h2 { font-family: var(--font-serif, Georgia, serif); }
   .nav-links { display: none !important; }
 }
 
+/* ── Landing page responsive grids ──────────────────────────────────────── */
+@keyframes lp-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.lp-hero-grid        { display: grid; grid-template-columns: 1fr 1fr; }
+.lp-stats-grid       { display: grid; grid-template-columns: repeat(4, 1fr); }
+.lp-ba-grid          { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.lp-steps-grid       { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.lp-pricing-grid     { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.lp-testi-grid       { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.lp-pulse-dot        { animation: lp-pulse 1.4s ease-in-out infinite; }
+
+@media (max-width: 900px) {
+  .lp-hero-grid    { grid-template-columns: 1fr !important; }
+  .lp-ba-grid      { grid-template-columns: 1fr !important; }
+  .lp-steps-grid   { grid-template-columns: 1fr !important; }
+  .lp-pricing-grid { grid-template-columns: 1fr !important; }
+  .lp-testi-grid   { grid-template-columns: 1fr !important; }
+  .lp-hero-right   { display: none !important; }
+}
+@media (max-width: 640px) {
+  .lp-stats-grid   { grid-template-columns: 1fr 1fr !important; }
+  .lp-stat-divider { display: none !important; }
+}
+
 /* ── Word-vanish animation (landing page headline) ───────────────────────── */
 @keyframes wordVanish {
   0%   { opacity: 1; filter: blur(0px); }

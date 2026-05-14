@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 
 interface HeroFormProps {
   onNavigate?: (url: string) => void;
+  buttonLabel?: string;
 }
 
-export default function HeroForm({ onNavigate }: HeroFormProps) {
+export default function HeroForm({ onNavigate, buttonLabel = "Get my SEO report →" }: HeroFormProps) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -91,7 +92,7 @@ export default function HeroForm({ onNavigate }: HeroFormProps) {
           onMouseEnter={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#C1121F"; }}
           onMouseLeave={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "#E63946"; }}
         >
-          {loading ? "Analyzing…" : "Get my SEO report →"}
+          {loading ? "Analyzing…" : buttonLabel}
         </button>
       </div>
       {error && (
